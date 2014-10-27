@@ -32,6 +32,10 @@ Each invocation creates a log file with all the generated output.
 
 * crashplan: https://www.code42.com/crashplan/
 
+## Acknowledgements
+
+This DroboApp has been the result of much online searching. In particular, the patch for JTux was adapted from [here](https://crashplan.zendesk.com/entries/390250-crashplan-on-sheevaplug). The idea of using the Debian version of libjna comes from [here](http://www.opticality.com/blog/2011/07/16/installing-crashplan-on-a-pogoplug-pro/). Libffi as a requirement comes from [here](http://www.openstora.com/phpBB3/viewtopic.php?f=1&amp;t=904), as well as the idea of moving the tmp folder. Libmd5 was introduced in version 3.2, and the instructions came from [here](http://pcloadletter.co.uk/2012/01/30/crashplan-syno-package/).
+
 ## Help support the apps
 
 If you like the repositories, or are using any of the apps from this site, please consider becoming a patreon or making a donation to support our efforts.
