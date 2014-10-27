@@ -1,0 +1,97 @@
+diff -puN jtux_file.c.orig jtux_file.c
+--- jtux_file.c.orig	2003-07-12 13:04:24.000000000 -0700
++++ jtux_file.c	2009-04-06 17:21:48.000000000 -0700
+@@ -157,7 +157,7 @@ JNIEXPORT jint JNICALL Java_jtux_UFile_d
+ 	return fd2;
+ }
+ 
+-JNIEXPORT int JNICALL Java_jtux_UFile_dup2(JNIEnv *env, jclass obj, jint fd, jint fd2)
++JNIEXPORT jint JNICALL Java_jtux_UFile_dup2(JNIEnv *env, jclass obj, jint fd, jint fd2)
+ {
+ 	JTHROW_neg1(dup2(fd, fd2))
+ 	return fd2;
+@@ -824,4 +824,4 @@ struct iovec *;
+ 	free(v_bytearray);
+ 	return r;
+ #endif
+-}
+\ No newline at end of file
++}
+diff -puN jtux_network.c.orig jtux_network.c
+--- jtux_network.c.orig	2003-07-11 22:23:23.000000000 -0700
++++ jtux_network.c	2009-04-06 17:20:33.000000000 -0700
+@@ -331,7 +331,7 @@ JNIEXPORT void JNICALL Java_jtux_UNetwor
+ 
+ #ifdef _SC_HOST_NAME_MAX
+ 	errno = 0;
+-	if ((size = sysconf(_SC_HOST_NAME_MAX)) == -1) {
++	if ((size = sysconf(_SC_HOST_NAME_MAX)) == -1)
+ 		if (errno == 0)
+ 			size = 1000;
+ 		else {
+diff -puN jtux_posixipc.c.orig jtux_posixipc.c
+--- jtux_posixipc.c.orig	2003-07-09 09:55:31.000000000 -0700
++++ jtux_posixipc.c	2009-04-06 16:45:15.000000000 -0700
+@@ -350,7 +350,7 @@ JNIEXPORT void JNICALL Java_jtux_UPosixI
+ }
+ 
+ JNIEXPORT void JNICALL Java_jtux_UPosixIPC_sem_1timedwait(JNIEnv *env, jclass obj,
+-  jlong sem, jobject time)
++  jlong sem, jobject tmout)
+ {
+ #if _XOPEN_VERSION >= 600 || true
+ // Following compiled but not tested
+diff -puN jtux_process.c.orig jtux_process.c
+--- jtux_process.c.orig	2003-07-14 07:49:41.000000000 -0700
++++ jtux_process.c	2009-04-06 16:22:10.000000000 -0700
+@@ -899,4 +899,4 @@ JNIEXPORT jlong JNICALL Java_jtux_UProce
+ 		(*env)->CallIntMethod(env, status, mid, status_c);
+ 	}
+ 	return rtn_pid;
+-}
+\ No newline at end of file
++}
+diff -puN jtux_sysvipc.c.orig jtux_sysvipc.c
+--- jtux_sysvipc.c.orig	2003-07-07 06:50:50.000000000 -0700
++++ jtux_sysvipc.c	2009-04-06 19:05:31.000000000 -0700
+@@ -178,7 +178,7 @@ JNIEXPORT void JNICALL Java_jtux_USysVIP
+ 	(*env)->ReleaseByteArrayElements(env, msgp, msgp_c, 0);
+ }
+ 
+-JNIEXPORT int JNICALL Java_jtux_USysVIPC_semctl(JNIEnv *env, jclass obj,
++JNIEXPORT jint JNICALL Java_jtux_USysVIPC_semctl(JNIEnv *env, jclass obj,
+   jint semid, jint semnum, jint cmd, jobject arg)
+ {
+ 	struct semid_ds data_c;
+diff -puN jtux_util.c.orig jtux_util.c
+--- jtux_util.c.orig	2003-07-14 19:29:48.000000000 -0700
++++ jtux_util.c	2009-04-06 18:56:06.000000000 -0700
+@@ -26,6 +26,7 @@
+ #include <sys/socket.h>
+ #include <sys/un.h>
+ #include <netinet/in.h>
++#include <sys/poll.h>
+ #include "jtux_util.h"
+ #include "JNI_macros.h"
+ 
+@@ -159,9 +160,9 @@ JNIEXPORT void JNICALL Java_jtux_UUtil_c
+ 		ok = false;
+ 		fprintf(stderr, "Type size error: sizeof(jint) < sizeof(mode_t)\n");
+ 	}
+-	if (sizeof(jint) < sizeof(dev_t)) {
++	if (sizeof(jint) < sizeof(int)) {
+ 		ok = false;
+-		fprintf(stderr, "Type size error: sizeof(jint) < sizeof(dev_t)\n");
++		fprintf(stderr, "Type size error: sizeof(jint) < sizeof((int)dev_t)\n");
+ 	}
+ 	if (sizeof(jint) < sizeof(ino_t)) {
+ 		ok = false;
+@@ -242,7 +243,7 @@ static struct {
+ 	char *ms_macro;
+ 	char *ms_desc;
+ } macrostr_db[] = {
+-#include "../../common/macrostr.incl"
++#include "macrostr.incl"
+ 	{ NULL, 0, NULL, NULL}
+ };
+ 

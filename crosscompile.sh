@@ -1,0 +1,13 @@
+export DROBO="5n"
+export TOOLCHAIN=~/xtools/toolchain/${DROBO}
+export ARCH="armv7-a"
+export PATH="${TOOLCHAIN}/bin:~/bin:$PATH"
+export CFLAGS="-march=${ARCH} -mcpu=marvell-pj4 -mfpu=vfpv3-d16 -mfloat-abi=softfp"
+export CXXFLAGS="${CFLAGS}"
+export CC="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-gcc"
+export CXX="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-g++"
+export AR="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-ar"
+export AS="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-as"
+export RANLIB="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-ranlib"
+export STRIP="${TOOLCHAIN}/bin/arm-marvell-linux-gnueabi-strip"
+export DROBOAPPS="/mnt/DroboFS/Shares/DroboApps"
