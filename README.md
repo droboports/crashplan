@@ -7,7 +7,7 @@ This is a set of scripts to package a DroboApp from scratch, i.e., download sour
 
 Check the [releases](https://github.com/droboports/sickbeard/releases) page. If there are no releases available, then you have to compile.
 
-Keep in mind that this DroboApp requires [java](https://github.com/droboports/java) to be installed.
+Keep in mind that this DroboApp requires [java7](https://github.com/droboports/java7) and the [locale](https://github.com/droboports/locale) apps to be installed.
 
 ## How to compile
 
