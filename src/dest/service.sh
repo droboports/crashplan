@@ -32,9 +32,10 @@ mainclass="com.backup42.service.CPService"
 # script hardening
 set -o errexit  # exit on uncaught error code
 set -o nounset  # exit on unset variable
-set -o pipefail # propagate last error code on pipe
+#set -o pipefail # propagate last error code on pipe
 
 # ensure log folder exists
+grep -q ^tmpfs /proc/mounts || mount -t tmpfs tmpfs /tmp
 logfolder="$(dirname ${logfile})"
 [[ ! -d "${logfolder}" ]] && mkdir -p "${logfolder}"
 

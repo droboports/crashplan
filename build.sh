@@ -161,6 +161,22 @@ echo "INSTALLDATE=`date +%Y%m%d`" >> install.vars
 echo "JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java7/bin/java" >> install.vars
 cat "${TARGET}/install.defaults" >> install.vars
 
+sed -i -e "s/ps axw/ps w/" "${DEST}/app/bin/restartLinux.sh"
+sed -i -e "3i <serviceLog>" \
+    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/service.log\"/>" \
+    -e "3i </serviceLog>" \
+    -e "3i <historyLog>" \
+    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/history.log\"/>" \
+    -e "3i </historyLog>" \
+    -e "10i <backupFilesLog>" \
+    -e "10i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/backup_files.log\"/>" \
+    -e "10i </backupFilesLog>" \
+    -e "10i <restoreFilesLog>" \
+    -e "10i <fileHandler append=\"false\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/restore_files.log\"/>" \
+    -e "10i </restoreFilesLog>" \
+    "${DEST}/app/conf/default.service.xml"
+sed -i -e "s/Xmx1024m/Xmx256m/g" "${DEST}/app/bin/run.conf"
+
 popd
 }
 
@@ -190,21 +206,6 @@ _create_tgz() {
 
 _package() {
   mkdir -p "${DEST}/app/manifest" "${DEST}/tmp"
-  sed -i -e "s/ps axw/ps w/" "${DEST}/app/bin/restartLinux.sh"
-  sed -i -e "3i <serviceLog>" \
-    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/service.log\"/>" \
-    -e "3i </serviceLog>" \
-    -e "3i <historyLog>" \
-    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/history.log\"/>" \
-    -e "3i </historyLog>" \
-    -e "10i <backupFilesLog>" \
-    -e "10i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/backup_files.log\"/>" \
-    -e "10i </backupFilesLog>" \
-    -e "10i <restoreFilesLog>" \
-    -e "10i <fileHandler append=\"false\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/restore_files.log\"/>" \
-    -e "10i </restoreFilesLog>" \
-    "${DEST}/app/conf/default.service.xml"
-
   cp -v -aR src/dest/* "${DEST}"/
   find "${DEST}" -name "._*" -print -delete
   _create_tgz
