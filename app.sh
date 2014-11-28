@@ -18,12 +18,14 @@ _download_deb() {
   return 0
 }
 
+JAVA_VERSION="6b33-1.13.5-2"
+
 ### JRE INCLUDES ###
 _build_jre() {
-local VERSION="6b33-1.13.5-1"
+local VERSION="${JAVA_VERSION}"
 local FOLDER="openjdk-6-jdk_${VERSION}"
 local FILE="${FOLDER}_armel.deb"
-local URL="http://ftp.ch.debian.org/debian/pool/main/o/openjdk-6/${FILE}"
+local URL="http://ftp.debian.org/debian/pool/main/o/openjdk-6/${FILE}"
 
 _download_deb "${FILE}" "${URL}" "${FOLDER}"
 }
@@ -33,7 +35,7 @@ _build_jtux() {
 local FOLDER="jtux"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://basepath.com/aup/jtux/${FILE}"
-local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_6b33-1.13.5-1/usr/lib/jvm/java-6-openjdk-armel/include"
+local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_${JAVA_VERSION}/usr/lib/jvm/java-6-openjdk-armel/include"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 cp src/Makefile "target/${FOLDER}/"
@@ -53,7 +55,7 @@ local VERSION="2.7.1"
 local FOLDER="fast-md5"
 local FILE="${FOLDER}-${VERSION}.zip"
 local URL="http://www.twmacinta.com/myjava/${FILE}"
-local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_6b33-1.13.5-1/usr/lib/jvm/java-6-openjdk-armel/include"
+local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_${JAVA_VERSION}/usr/lib/jvm/java-6-openjdk-armel/include"
 
 _download_zip "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
@@ -71,7 +73,7 @@ local URL="ftp://sourceware.org/pub/libffi/${FILE}"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
-./configure --host=arm-none-linux-gnueabi --prefix="${DEPS}" --libdir="${DEST}/lib" --disable-static
+./configure --host="${HOST}" --prefix="${DEPS}" --libdir="${DEST}/lib" --disable-static
 make
 make install
 mkdir -vp "${DEPS}/include/"
@@ -104,7 +106,7 @@ _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 mkdir -p "${DEST}/app"
 pushd "${DEST}/app"
 cat "${TARGET}/CrashPlan_${VERSION}.cpi" | gzip -dc - | cpio -i --no-preserve-owner
-cp -v -f "${TARGET}/scripts/run.conf" bin/
+cp -vf "${TARGET}/scripts/run.conf" bin/
 
 echo "" > install.vars
 echo "TARGETDIR=${DEST}/app" >> install.vars
@@ -130,7 +132,7 @@ sed -i -e "3i <serviceLog>" \
     -e "10i <fileHandler append=\"false\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/restore_files.log\"/>" \
     -e "10i </restoreFilesLog>" \
     "${DEST}/app/conf/default.service.xml"
-sed -i -e "s/Xmx1024m/Xmx256m/g" "${DEST}/app/bin/run.conf"
+sed -i -e "s/Xmx1024m/Xmx128m/g" "${DEST}/app/bin/run.conf"
 
 popd
 }
