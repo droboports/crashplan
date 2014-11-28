@@ -83,9 +83,9 @@ start() {
   SRV_JAVA_OPTS="${SRV_JAVA_OPTS} -Djava.io.tmpdir=$tmpdir"
   export LC_ALL="en_US.UTF-8"
   export LANG="en_US.UTF-8"
-  export LD_LIBRARY_PATH="${prog_dir}/lib:${prog_dir}/app:$LD_LIBRARY_PATH"
+  export LD_LIBRARY_PATH="${prog_dir}/lib:${prog_dir}/app:${LD_LIBRARY_PATH:-}"
   cd "${prog_dir}/app"
-  setsid ${java} ${SRV_JAVA_OPTS} -classpath "${classpath}" "${mainclass}" &
+  setsid "${daemon}" ${SRV_JAVA_OPTS} -classpath "${classpath}" "${mainclass}" &
   if [ $! -gt 0 ]; then
     local pid=$!
     echo $pid > ${pidfile}
