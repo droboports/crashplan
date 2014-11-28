@@ -1,6 +1,16 @@
 # $1: file
 # $2: url
 # $3: folder
+_download_zip() {
+  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ -d "target/${3}" ]] && rm -v -fr "target/${3}"
+  [[ ! -d "target/${3}" ]] && unzip -d "target" "download/${1}"
+  return 0
+}
+
+# $1: file
+# $2: url
+# $3: folder
 _download_deb() {
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
   [[ -d "target/${3}" ]] && rm -v -fr "target/${3}"
