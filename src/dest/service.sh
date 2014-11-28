@@ -55,11 +55,11 @@ _set_watch_files() {
 _find_java() {
   if [[ -x "${DROBOAPPS_DIR}/java8/bin/java" ]]; then
     daemon="${DROBOAPPS_DIR}/java8/bin/java"
-  else if [[ -x "${DROBOAPPS_DIR}/java7/bin/java" ]]; then
+  elif [[ -x "${DROBOAPPS_DIR}/java7/bin/java" ]]; then
     daemon="${DROBOAPPS_DIR}/java7/bin/java"
-  else if [[ -x "${DROBOAPPS_DIR}/java6/bin/java" ]]; then
+  elif [[ -x "${DROBOAPPS_DIR}/java6/bin/java" ]]; then
     daemon="${DROBOAPPS_DIR}/java6/bin/java"
-  else if [[ -x "${DROBOAPPS_DIR}/java/bin/java" ]]; then
+  elif [[ -x "${DROBOAPPS_DIR}/java/bin/java" ]]; then
     daemon="${DROBOAPPS_DIR}/java/bin/java"
   else
     echo "Cannot find Java. Please install a Java VM." > "${statusfile}"
