@@ -12,7 +12,7 @@ framework_version="2.0"
 
 # app description
 name="crashplan"
-version="3.6.4"
+version="3.7.0"
 description="Cloud backup service"
 depends="locale"
 

@@ -96,7 +96,7 @@ cp -v "target/${FOLDER}/usr/lib/jni/libjnidispatch.so" "${DEST}/lib/"
 
 ### CRASHPLAN ###
 _build_crashplan() {
-local VERSION="3.6.4"
+local VERSION="3.7.0"
 local FOLDER="CrashPlan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"
