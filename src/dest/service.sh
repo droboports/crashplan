@@ -78,6 +78,7 @@ start() {
   _create_locale
   _set_watch_files
   _find_java
+  if [[ ! -d "${tmpdir}" ]]; then mkdir -p "${tmpdir}"; fi
   # source for SRV_JAVA_OPTS
   source "${prog_dir}/app/bin/run.conf"
   SRV_JAVA_OPTS="${SRV_JAVA_OPTS} -Djava.io.tmpdir=$tmpdir"
