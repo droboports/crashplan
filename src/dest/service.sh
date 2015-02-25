@@ -132,6 +132,7 @@ _service_start() {
 }
 
 _service_stop() {
+  _find_java
   if ! /sbin/start-stop-daemon -K -x "${daemon}" -p "${pidfile}" -v; then echo "${name} is not running" >&3; fi
 }
 
