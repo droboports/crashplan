@@ -30,7 +30,7 @@ export CFLAGS="${CFLAGS:-} -Os -fPIC"
 export CXXFLAGS="${CXXFLAGS:-} ${CFLAGS}"
 export CPPFLAGS="-I${DEPS}/include"
 export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,${DEST}/lib -L${DEST}/lib"
-alias make="make -j8 V=1 VERBOSE=1"
+alias make="make -j4 V=1 VERBOSE=1"
 
 ### support functions ###
 # Download a TAR file and unpack it, removing old files.

@@ -2,9 +2,11 @@
 # $2: url
 # $3: folder
 _download_zip() {
+  [[ ! -d "download" ]]      && mkdir -p "download"
+  [[ ! -d "target" ]]        && mkdir -p "target"
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
-  [[ -d "target/${3}" ]] && rm -v -fr "target/${3}"
-  [[ ! -d "target/${3}" ]] && unzip -d "target" "download/${1}"
+  [[ -d "target/${3}" ]]     && rm -v -fr "target/${3}"
+  [[ ! -d "target/${3}" ]]   && unzip -d "target" "download/${1}"
   return 0
 }
 
@@ -12,13 +14,15 @@ _download_zip() {
 # $2: url
 # $3: folder
 _download_deb() {
+  [[ ! -d "download" ]]      && mkdir -p "download"
+  [[ ! -d "target" ]]        && mkdir -p "target"
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
-  [[ -d "target/${3}" ]] && rm -v -fr "target/${3}"
-  [[ ! -d "target/${3}" ]] && mkdir -p "target/${3}" && dpkg -x "download/${1}" "target/${3}"
+  [[ -d "target/${3}" ]]     && rm -v -fr "target/${3}"
+  [[ ! -d "target/${3}" ]]   && mkdir -p "target/${3}" && dpkg -x "download/${1}" "target/${3}"
   return 0
 }
 
-JAVA_VERSION="6b33-1.13.5-2"
+JAVA_VERSION="6b35-1.13.7-1"
 
 ### JRE INCLUDES ###
 _build_jre() {
@@ -60,13 +64,13 @@ local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_${JAVA_VERSION}/usr/lib/jvm/java
 _download_zip "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
 mkdir -p "${DEST}/lib"
-"${CC}" ${CFLAGS} -Os -shared -I. -I${JAVA_INCLUDE} src/lib/arch/linux_x86/MD5.c -o "${DEST}/lib/libmd5.so"
+"${CC}" ${CFLAGS} -shared -I. -I"${JAVA_INCLUDE}" src/lib/arch/linux_x86/MD5.c -o "${DEST}/lib/libmd5.so"
 popd
 }
 
 ### LIBFFI ###
 _build_libffi() {
-local VERSION="3.0.10"
+local VERSION="3.0.13"
 local FOLDER="libffi-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="ftp://sourceware.org/pub/libffi/${FILE}"
@@ -78,7 +82,7 @@ make
 make install
 mkdir -vp "${DEPS}/include/"
 mv -v "${DEST}/lib/${FOLDER}/include"/* "${DEPS}/include/"
-rm -v -fR "${DEST}/lib/${FOLDER}" "${DEST}/lib/pkgconfig"
+rm -vfR "${DEST}/lib/${FOLDER}" "${DEST}/lib/pkgconfig"
 popd
 }
 
@@ -96,7 +100,7 @@ cp -v "target/${FOLDER}/usr/lib/jni/libjnidispatch.so" "${DEST}/lib/"
 
 ### CRASHPLAN ###
 _build_crashplan() {
-local VERSION="3.7.0"
+local VERSION="4.2.0"
 local FOLDER="CrashPlan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"
@@ -106,7 +110,7 @@ _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 mkdir -p "${DEST}/app"
 pushd "${DEST}/app"
 cat "${TARGET}/CrashPlan_${VERSION}.cpi" | gzip -dc - | cpio -i --no-preserve-owner
-cp -vf "${TARGET}/scripts/run.conf" bin/
+cp -vf "${TARGET}/scripts/run.conf" "bin/run.conf.default"
 
 echo "" > install.vars
 echo "TARGETDIR=${DEST}/app" >> install.vars
@@ -115,11 +119,11 @@ echo "MANIFESTDIR=${DEST}/app/manifest" >> install.vars
 echo "INITDIR=" >> install.vars
 echo "RUNLVLDIR=" >> install.vars
 echo "INSTALLDATE=`date +%Y%m%d`" >> install.vars
-echo "JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java7/bin/java" >> install.vars
+echo "JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java8/bin/java" >> install.vars
 cat "${TARGET}/install.defaults" >> install.vars
 
-sed -i -e "s/ps axw/ps w/" "${DEST}/app/bin/restartLinux.sh"
-sed -i -e "3i <serviceLog>" \
+sed -e "s/ps axw/ps w/" -i "${DEST}/app/bin/restartLinux.sh"
+sed -e "3i <serviceLog>" \
     -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/service.log\"/>" \
     -e "3i </serviceLog>" \
     -e "3i <historyLog>" \
@@ -131,8 +135,8 @@ sed -i -e "3i <serviceLog>" \
     -e "10i <restoreFilesLog>" \
     -e "10i <fileHandler append=\"false\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/restore_files.log\"/>" \
     -e "10i </restoreFilesLog>" \
-    "${DEST}/app/conf/default.service.xml"
-sed -i -e "s/Xmx1024m/Xmx128m/g" "${DEST}/app/bin/run.conf"
+    -i "${DEST}/app/conf/default.service.xml"
+sed -e "s/Xmx1024m/Xmx128m/g" -i "${DEST}/app/bin/run.conf.default"
 
 popd
 }
@@ -141,8 +145,8 @@ popd
 _build() {
   _build_jre
   _build_jtux
-  _build_libffi
   _build_fastmd5
+  _build_libffi
   _build_libjna
   _build_crashplan
   _package
