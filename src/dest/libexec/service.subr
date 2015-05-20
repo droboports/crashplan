@@ -717,6 +717,11 @@ _download_app()
 
   _tmpWgetDir="$($MKTEMP -dt -p "${_tmpDir}" "${1}.XXXXXX")"
 
+  if [ -z "${_tmpWgetDir}" ]; then
+    echo "Unable to create a temporary folder." >&2
+    return 1
+  fi
+
   $WGET -O "${_tmpWgetDir}/${1}.tgz" "${_repoUrl}/${1}.tgz" > "${_tmpWgetDir}/wget.log" 2>&1
   _result=$?
   if [ ${_result} -eq 0 ]; then
@@ -1162,7 +1167,7 @@ _status_app()
       else
         _running="stopped"
       fi
-      _status="${_appName} is ${_enabled} and ${_running}."
+      _status="${_appName} is ${_enabled} and ${_running}"
     else
       _status=$(echo "${_status}" | $GREP ".* is .* and .*" 2> /dev/null || true)
     fi
