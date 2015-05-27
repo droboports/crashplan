@@ -44,7 +44,6 @@ MKTEMP=/bin/mktemp
 WC=/usr/bin/wc
 AWK=/usr/bin/awk
 FIND=/usr/bin/find
-TAIL=/usr/bin/tail
 WGET=/usr/bin/wget
 DIFF=/usr/bin/diff
 BASENAME=/usr/bin/basename
@@ -76,19 +75,6 @@ fi
 if [ -f "${SERVICE_WEBUI}" ]; then
   . "${SERVICE_WEBUI}"
 fi
-
-
-# _tail_file
-# $1: file name
-# $2: nr of lines
-_tail_file()
-{
-  if [ "$($WC -l "${1}" | $AWK '{print $1}')" -gt "${2}" ]; then
-    $TAIL -n "${2}" "${1}" > "${1}.tail"
-    $CP "${1}.tail" "${1}"
-    $RM "${1}.tail"
-  fi
-}
 
 
 # _list_droboapps
@@ -718,7 +704,7 @@ _download_app()
   _tmpWgetDir="$($MKTEMP -dt -p "${_tmpDir}" "${1}.XXXXXX")"
 
   if [ -z "${_tmpWgetDir}" ]; then
-    echo "Unable to create a temporary folder." >&2
+    eval echo \"Unable to create a temporary download folder.\" ${STDERR}
     return 1
   fi
 
@@ -728,7 +714,7 @@ _download_app()
     $CP "${_tmpWgetDir}/${1}.tgz" "${DROBOAPPS_DIR}/"
     $RM -rf "${_tmpWgetDir}"
   else
-    echo "Unable to download ${1}. Please check ${_tmpWgetDir}/wget.log for more information." >&2
+    eval echo \"Unable to download ${1}. Please check ${_tmpWgetDir}/wget.log for more information.\" ${STDERR}
     return ${_result};
   fi
 }
