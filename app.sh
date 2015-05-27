@@ -5,7 +5,7 @@ _download_zip() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
-  [[ -d "target/${3}" ]]     && rm -v -fr "target/${3}"
+  [[   -d "target/${3}" ]]   && rm -v -fr "target/${3}"
   [[ ! -d "target/${3}" ]]   && unzip -d "target" "download/${1}"
   return 0
 }
@@ -17,19 +17,21 @@ _download_deb() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
-  [[ -d "target/${3}" ]]     && rm -v -fr "target/${3}"
+  [[   -d "target/${3}" ]]   && rm -v -fr "target/${3}"
   [[ ! -d "target/${3}" ]]   && mkdir -p "target/${3}" && dpkg -x "download/${1}" "target/${3}"
   return 0
 }
 
-JAVA_VERSION="6b35-1.13.7-1"
+JAVA_VERSION="8u45-b14-3"
+JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
+JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 
 ### JRE INCLUDES ###
 _build_jre() {
 local VERSION="${JAVA_VERSION}"
-local FOLDER="openjdk-6-jdk_${VERSION}"
+local FOLDER="openjdk-8-jdk_${VERSION}"
 local FILE="${FOLDER}_armel.deb"
-local URL="http://ftp.debian.org/debian/pool/main/o/openjdk-6/${FILE}"
+local URL="http://ftp.debian.org/debian/pool/main/o/openjdk-8/${FILE}"
 
 _download_deb "${FILE}" "${URL}" "${FOLDER}"
 }
@@ -39,7 +41,6 @@ _build_jtux() {
 local FOLDER="jtux"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://basepath.com/aup/jtux/${FILE}"
-local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_${JAVA_VERSION}/usr/lib/jvm/java-6-openjdk-armel/include"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 cp src/Makefile "target/${FOLDER}/"
@@ -59,12 +60,11 @@ local VERSION="2.7.1"
 local FOLDER="fast-md5"
 local FILE="${FOLDER}-${VERSION}.zip"
 local URL="http://www.twmacinta.com/myjava/${FILE}"
-local JAVA_INCLUDE="${PWD}/target/openjdk-6-jdk_${JAVA_VERSION}/usr/lib/jvm/java-6-openjdk-armel/include"
 
 _download_zip "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
 mkdir -p "${DEST}/lib"
-"${CC}" ${CFLAGS} -shared -I. -I"${JAVA_INCLUDE}" src/lib/arch/linux_x86/MD5.c -o "${DEST}/lib/libmd5.so"
+"${CC}" ${CFLAGS} -shared -I. -I"${JAVA_INCLUDE}" -I"${JAVA_INCLUDE_LINUX}" src/lib/arch/linux_x86/MD5.c -o "${DEST}/lib/libmd5.so"
 popd
 }
 
@@ -83,15 +83,16 @@ make install
 mkdir -vp "${DEPS}/include/"
 mv -v "${DEST}/lib/${FOLDER}/include"/* "${DEPS}/include/"
 rm -vfR "${DEST}/lib/${FOLDER}" "${DEST}/lib/pkgconfig"
+ln -s "libffi.so.6.0.1" "${DEST}/lib/libffi.so.5"
 popd
 }
 
 ### LIBJNA ###
 _build_libjna() {
-local VERSION="3.2.7-4"
+local VERSION="3.2.4-2"
 local FOLDER="libjna-java_${VERSION}"
 local FILE="${FOLDER}_armel.deb"
-local URL="http://ftp.ch.debian.org/debian/pool/main/libj/libjna-java/${FILE}"
+local URL="http://ftp.debian.org/debian/pool/main/libj/libjna-java/${FILE}"
 
 _download_deb "${FILE}" "${URL}" "${FOLDER}"
 mkdir -p "${DEST}/lib"
@@ -147,7 +148,7 @@ _build() {
   _build_jtux
   _build_fastmd5
   _build_libffi
-  _build_libjna
+#  _build_libjna
   _build_crashplan
   _package
 }
