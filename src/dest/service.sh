@@ -38,8 +38,9 @@ start() {
   if [ ! -d "${java_tmp_dir}" ]; then
     mkdir -p "${java_tmp_dir}"
   fi
+  chmod 777 "${java_tmp_dir}"
   . "${prog_dir}/app/bin/run.conf"
-  SRV_JAVA_OPTS="${SRV_JAVA_OPTS:-} -Djava.io.tmpdir=${java_tmp_dir}"
+  SRV_JAVA_OPTS="${SRV_JAVA_OPTS:-} -Djava.io.tmpdir=${java_tmp_dir} -Djava.library.path=${prog_dir}/lib"
   export LC_ALL="en_US.UTF-8"
   export LANG="en_US.UTF-8"
   export LD_LIBRARY_PATH="${prog_dir}/lib:${prog_dir}/app:${LD_LIBRARY_PATH:-}"
