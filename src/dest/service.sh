@@ -61,7 +61,6 @@ STDERR=">&4"
 echo "$(date +"%Y-%m-%d %H-%M-%S"):" "${0}" "${@}"
 set -o errexit  # exit on uncaught error code
 set -o nounset  # exit on unset variable
-set -o pipefail # propagate last error code on pipe
 set -o xtrace   # enable script tracing
 
 main "${@}"
