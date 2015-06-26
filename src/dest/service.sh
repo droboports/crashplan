@@ -7,7 +7,7 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.2.0"
+version="4.2.0-1"
 description="Cloud backup service"
 depends="java8 locale"
 webui=""
@@ -54,6 +54,7 @@ start() {
 }
 
 # boilerplate
+if ! grep -q ^tmpfs /proc/mounts; then mount -t tmpfs tmpfs /tmp; fi
 if [ ! -d "${tmp_dir}" ]; then mkdir -p "${tmp_dir}"; fi
 exec 3>&1 4>&2 1>> "${logfile}" 2>&1
 STDOUT=">&3"

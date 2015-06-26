@@ -352,6 +352,46 @@ _get_depends()
 }
 
 
+# _tgz_contains_file
+# $1: tgz file path
+# $2: filename without path
+# return: 0 if tgz contains file, 1 if not
+# This function looks in the tgzs "root" folder for the given filename.
+# It will return 0 if "filename" or "./filename" are present in the tgz.
+_tgz_contains_file()
+{
+  local _tgz="${1}"
+  local _file="${2}"
+
+  if $TAR -ztf "${_tgz}" "${_file}" > /dev/null 2>&1; then
+    return 0
+  elif $TAR -ztf "${_tgz}" "./${_file}" > /dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+
+# _tgz_extract_file
+# $1: tgz file path
+# $2: filename without path
+# $@: further tgz options, such as -O or -C
+# return: 0 if tgz contains file, 1 if not
+# This function looks in the tgzs "root" folder for the given filename.
+# It will return 0 if "filename" or "./filename" are present in the tgz.
+_tgz_extract_file()
+{
+  local _tgz="${1}"
+  shift
+  local _file="${1}"
+  shift
+
+  if ! $TAR -zxf "${_tgz}" "${_file}" "${@}" 2> /dev/null; then
+    $TAR -zxf "${_tgz}" "./${_file}" "${@}" 2> /dev/null
+  fi
+}
+
+
 # _extract_depends
 # $1: "update" or "install" or "service"
 # $2: TGZ_FILE file path
@@ -364,9 +404,8 @@ _extract_depends()
   local _depends=""
 
   _tgzName="$($BASENAME "${_tgz}" .tgz)"
-  if $TAR -ztf "${_tgz}" service.sh > /dev/null 2>&1; then
-    # The file exists.
-    _depends="$($TAR -Ozxf "${_tgz}" service.sh | $GREP '^[Dd]epends=')"
+  if _tgz_contains_file "${_tgz}" "service.sh"; then
+    _depends="$(_tgz_extract_file "${_tgz}" "service.sh" -O | $GREP '^[Dd]epends=')"
     if [ -n "${_depends}" ]; then
       # There is a depends in service.sh
       _depends="$(echo "${_depends}" | $SED -e 's/^[Dd]epends=//' -e 's/\"//g')"
@@ -762,9 +801,8 @@ _install_app()
   # untar on top of the existing install.
   if [ -d "${_appDir}" ]; then
     eval echo \"Upgrading ${_tgzName}.\" ${STDOUT}
-    if $TAR -ztf "${_tgz}" update.sh > /dev/null 2>&1; then
-      # There's an update.sh
-      $TAR -zxf "${_tgz}" update.sh -C "${_appDir}"
+    if _tgz_contains_file "${_tgz}" "update.sh"; then
+      _tgz_extract_file "${_tgz}" "update.sh" -C "${_appDir}"
       # Launch the update script.
       (cd "${_appDir}" && $SH "${_appDir}/update.sh" && $RM -f "${_appDir}/update.sh")
     fi
