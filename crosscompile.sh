@@ -1,5 +1,5 @@
 export DROBO="5n"
-export TOOLCHAIN=~/xtools/toolchain/${DROBO}
+export TOOLCHAIN="${BUILD_TOOLCHAIN:-${HOME}/xtools/toolchain/${DROBO}}"
 export ARCH="armv7-a"
 export HOST="arm-marvell-linux-gnueabi"
 export PATH="${TOOLCHAIN}/bin:~/bin:$PATH"
