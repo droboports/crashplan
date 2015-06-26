@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config id="service" version="6">
+  <serviceLog>
+    <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/service.log"/>
+  </serviceLog>
+  <historyLog>
+    <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/history.log"/>
+  </historyLog>
+  <serviceLog>
+    <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/service.log"/>
+  </serviceLog>
+  <historyLog>
+    <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/history.log"/>
+  </historyLog>
+  <orgType>CONSUMER</orgType>
+  <backupFilesLog>
+    <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/backup_files.log"/>
+  </backupFilesLog>
+  <restoreFilesLog>
+    <fileHandler append="false" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/restore_files.log"/>
+  </restoreFilesLog>
+  <helpNovice>STILL_RUNNING</helpNovice>
+  <serviceUIConfig>
+    <serviceHost>0.0.0.0</serviceHost>
+    <autoLoginPasswordHash nil="true"/>
+    <autoLogin>false</autoLogin>
+  </serviceUIConfig>
+  <servicePeerConfig>
+    <authority address="central.crashplan.com:443"/>
+    <listenForBackup>true</listenForBackup>
+  </servicePeerConfig>
+  <serviceBackupConfig>
+    <backupFilesLog>
+      <fileHandler append="true" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/backup_files.log"/>
+    </backupFilesLog>
+    <restoreFilesLog>
+      <fileHandler append="false" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/restore_files.log"/>
+    </restoreFilesLog>
+    <highBandwidthRate>37.5</highBandwidthRate>
+    <lowBandwidthRate>25</lowBandwidthRate>
+    <wanTcpTrafficClass>2</wanTcpTrafficClass>
+    <notifyDeliveryTime>ANY</notifyDeliveryTime>
+    <hiddenFiles/>
+    <backupConfig>
+      <excludeSystem/>
+      <noCompressionPatterns/>
+      <manualFileWatchPatterns/>
+      <backupSets>
+        <backupSet id="1">
+          <backupPaths>
+          </backupPaths>
+        </backupSet>
+      </backupSets>
+    </backupConfig>
+  </serviceBackupConfig>
+</config>

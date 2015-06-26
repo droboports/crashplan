@@ -88,16 +88,16 @@ popd
 }
 
 ### LIBJNA ###
-_build_libjna() {
-local VERSION="3.2.4-2"
-local FOLDER="libjna-java_${VERSION}"
-local FILE="${FOLDER}_armel.deb"
-local URL="http://ftp.debian.org/debian/pool/main/libj/libjna-java/${FILE}"
-
-_download_deb "${FILE}" "${URL}" "${FOLDER}"
-mkdir -p "${DEST}/lib"
-cp -v "target/${FOLDER}/usr/lib/jni/libjnidispatch.so" "${DEST}/lib/"
-}
+#_build_libjna() {
+#local VERSION="3.2.4-2"
+#local FOLDER="libjna-java_${VERSION}"
+#local FILE="${FOLDER}_armel.deb"
+#local URL="http://ftp.debian.org/debian/pool/main/libj/libjna-java/${FILE}"
+#
+#_download_deb "${FILE}" "${URL}" "${FOLDER}"
+#mkdir -p "${DEST}/lib"
+#cp -v "target/${FOLDER}/usr/lib/jni/libjnidispatch.so" "${DEST}/lib/"
+#}
 
 ### CRASHPLAN ###
 _build_crashplan() {
@@ -112,8 +112,9 @@ mkdir -p "${DEST}/app"
 pushd "${DEST}/app"
 cat "${TARGET}/CrashPlan_${VERSION}.cpi" | gzip -dc - | cpio -i --no-preserve-owner
 cp -vf "${TARGET}/scripts/run.conf" "bin/run.conf.default"
-
-echo "" > install.vars
+sed -e "s/ps axw/ps w/" -i "${DEST}/app/bin/restartLinux.sh"
+sed -e "s/Xmx1024m/Xmx512m/g" -i "${DEST}/app/bin/run.conf.default"
+> install.vars
 echo "TARGETDIR=${DEST}/app" >> install.vars
 echo "BINSDIR=${DEST}/app/bin" >> install.vars
 echo "MANIFESTDIR=${DEST}/app/manifest" >> install.vars
@@ -122,23 +123,6 @@ echo "RUNLVLDIR=" >> install.vars
 echo "INSTALLDATE=`date +%Y%m%d`" >> install.vars
 echo "JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java8/bin/java" >> install.vars
 cat "${TARGET}/install.defaults" >> install.vars
-
-sed -e "s/ps axw/ps w/" -i "${DEST}/app/bin/restartLinux.sh"
-sed -e "3i <serviceLog>" \
-    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/service.log\"/>" \
-    -e "3i </serviceLog>" \
-    -e "3i <historyLog>" \
-    -e "3i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/history.log\"/>" \
-    -e "3i </historyLog>" \
-    -e "10i <backupFilesLog>" \
-    -e "10i <fileHandler append=\"true\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/backup_files.log\"/>" \
-    -e "10i </backupFilesLog>" \
-    -e "10i <restoreFilesLog>" \
-    -e "10i <fileHandler append=\"false\" count=\"1\" level=\"ALL\" limit=\"1048576\" pattern=\"/tmp/DroboApps/crashplan/restore_files.log\"/>" \
-    -e "10i </restoreFilesLog>" \
-    -i "${DEST}/app/conf/default.service.xml"
-sed -e "s/Xmx1024m/Xmx512m/g" -i "${DEST}/app/bin/run.conf.default"
-
 popd
 }
 
