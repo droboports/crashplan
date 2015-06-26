@@ -7,7 +7,7 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.2.0"
+version="4.2.0-1"
 description="Cloud backup service"
 depends="java8 locale"
 webui=""
