@@ -24,7 +24,7 @@ exec 2> >(tee -a "${logfile}" >&2)
 ### environment setup ###
 source crosscompile.sh
 export NAME="$(basename ${PWD})"
-export DEST="/mnt/DroboFS/Shares/DroboApps/${NAME}"
+export DEST="${BUILD_DEST:-/mnt/DroboFS/Shares/DroboApps/${NAME}}"
 export DEPS="${PWD}/target/install"
 export CFLAGS="${CFLAGS:-} -Os -fPIC"
 export CXXFLAGS="${CXXFLAGS:-} ${CFLAGS}"
