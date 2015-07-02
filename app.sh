@@ -101,7 +101,7 @@ popd
 
 ### CRASHPLAN ###
 _build_crashplan() {
-local VERSION="4.2.0"
+local VERSION="4.3.0"
 local FOLDER="CrashPlan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"

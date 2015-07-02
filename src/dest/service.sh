@@ -7,13 +7,14 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.2.0-1"
+version="4.3.0"
 description="Cloud backup service"
 depends="java8 locale"
 webui=""
 
 prog_dir="$(dirname "$(realpath "${0}")")"
 java_tmp_dir="${prog_dir}/tmp"
+data_dir="/mnt/DroboFS/System/${name}"
 tmp_dir="/tmp/DroboApps/${name}"
 pidfile="${tmp_dir}/pid.txt"
 logfile="${tmp_dir}/log.txt"
@@ -39,11 +40,12 @@ start() {
     mkdir -p "${java_tmp_dir}"
   fi
   chmod 777 "${java_tmp_dir}"
-  . "${prog_dir}/app/bin/run.conf"
-  SRV_JAVA_OPTS="${SRV_JAVA_OPTS:-} -Djava.io.tmpdir=${java_tmp_dir} -Djava.library.path=${prog_dir}/lib"
   export LC_ALL="en_US.UTF-8"
   export LANG="en_US.UTF-8"
   export LD_LIBRARY_PATH="${prog_dir}/lib:${prog_dir}/app:${LD_LIBRARY_PATH:-}"
+  export HOME="${data_dir}"
+  . "${prog_dir}/app/bin/run.conf"
+  SRV_JAVA_OPTS="${SRV_JAVA_OPTS:-} -Duser.home=${data_dir} -Djava.io.tmpdir=${java_tmp_dir} -Djava.library.path=${prog_dir}/lib -Djava.net.preferIPv4Stack=true"
   cd "${prog_dir}/app"
   setsid "${daemon}" ${SRV_JAVA_OPTS} -classpath "${classpath}" "${mainclass}" &
   if [ $! -gt 0 ]; then

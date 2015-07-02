@@ -20,10 +20,9 @@
     <fileHandler append="false" count="1" level="ALL" limit="1048576" pattern="/tmp/DroboApps/crashplan/restore_files.log"/>
   </restoreFilesLog>
   <helpNovice>STILL_RUNNING</helpNovice>
+  <userHome>/mnt/DroboFS/System/crashplan</userHome>
   <serviceUIConfig>
     <serviceHost>0.0.0.0</serviceHost>
-    <autoLoginPasswordHash nil="true"/>
-    <autoLogin>false</autoLogin>
   </serviceUIConfig>
   <servicePeerConfig>
     <authority address="central.crashplan.com:443"/>
