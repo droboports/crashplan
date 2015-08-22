@@ -14,7 +14,6 @@ exec 3>&1 4>&2 1>> "${logfile}" 2>&1
 echo "$(date +"%Y-%m-%d %H-%M-%S"):" "${0}" "${@}"
 set -o errexit  # exit on uncaught error code
 set -o nounset  # exit on unset variable
-set -o pipefail # propagate last error code on pipe
 set -o xtrace   # enable script tracing
 
 # copy default configuration files
@@ -41,4 +40,4 @@ if [ -d "${prog_dir}/app/backupArchives" -a ! -h "${prog_dir}/app/backupArchives
 fi
 ln -fs "${data_dir}/backupArchives" "${prog_dir}/app/"
 
-echo -n "4243,drobo" > "${data_dir}/.ui_info"
+#echo -n "4243,drobo" > "${data_dir}/.ui_info"

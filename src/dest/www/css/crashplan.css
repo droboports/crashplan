@@ -1,0 +1,35 @@
+body {
+  padding-top: 50px;
+}
+
+.top-toolbar {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.tab-content {
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+ul.nav li a, ul.nav li a:visited {
+  color: rgb(92, 184, 92) !important;
+}
+
+ul.nav li a:hover, ul.nav li a:active {
+  color: rgb(92, 184, 92) !important;
+}
+
+ul.nav li.active a {
+  color: rgb(76, 174, 76) !important;
+}
+
+p.title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 175%;
+  font-weight: bold;
+}

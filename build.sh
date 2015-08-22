@@ -180,10 +180,17 @@ _dist_clean() {
 ### application-specific functions ###
 . app.sh
 
-case "${1:-}" in
-  clean)     _clean ;;
-  distclean) _dist_clean ;;
-  package)   _package ;;
-  "")        _build ;;
-  *)         _build_${1} ;;
-esac
+if [ -n "${1:-}" ]; then
+  while [ -n "${1:-}" ]; do
+    case "${1}" in
+      clean)     _clean ;;
+      distclean) _dist_clean ;;
+      all)       _build ;;
+      package)   _package ;;
+      *)         _build_${1} ;;
+    esac
+    shift
+  done
+else
+  _build
+fi
