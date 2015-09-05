@@ -338,14 +338,14 @@ if (strpos($out[0], "running") !== FALSE) {
                 <div class="form-group">
                   <label for="ui_info2" class="col-sm-2 control-label">Content of .ui_info</label>
                   <div class="col-sm-8">
-                    <input type="text" class="form-control" id="ui_info2" value="<?php echo file_get_contents('/var/lib/crashplan/.ui_info'); ?>" readonly />
+                    <input type="text" class="form-control" id="ui_info2" value="<?php echo $uiinfo; ?>" readonly />
                   </div>
                 </div>
               </form>
               <p><strong>This file will have to be updated if your Drobo changes its <code>.ui_info</code> information. Check this page if you are unable to connect to your Drobo.</strong></p>
               <p>Save the file, and and proceed to <code>ui.properties</code>.</p>
               <p>Alternatively you can download the file by clicking the link below:</p>
-              <a class="btn btn-success" download=".ui_info" href="ui_info.php"><span class="glyphicon glyphicon-download"></span> Download ui_info</a>
+              <a class="btn btn-default" download=".ui_info" href="ui_info.php"><span class="glyphicon glyphicon-download"></span> Download ui_info</a>
             </div>
           </div>
 
@@ -456,7 +456,7 @@ if (strpos($out[0], "running") !== FALSE) {
               <p>Open the <code>ui.properties</code> file in a text editor, look for the line that looks like:</p>
               <p><code>#serviceHost=127.0.0.1</code></p>
               <p>And replace it with:</p>
-              <p><code>serviceHost=<?php echo $_SERVER['SERVER_ADDR']; ?></code></p>
+              <p><code>serviceHost=<?php echo $droboip; ?></code></p>
               <p><strong>This line will have to be updated if your Drobo's IP address is changed.</strong></p>
               <p>Save the file, and start the CrashPlan client. After a few moments you should see a login screen for your Drobo.</p>
             </div>
