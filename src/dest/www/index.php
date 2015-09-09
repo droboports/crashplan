@@ -180,7 +180,7 @@ if (strpos($out[0], "running") !== FALSE) {
       <div id="descriptionbody" class="panel-collapse collapse in">
         <div class="panel-body">
           <p>Crashplan is backup made simple. Crashplan enables desktop-to-Drobo, Drobo-to-Drobo, and Drobo-to-Crashplan cloud backups. You can even use Drobos from your friends since all backups are encrypted.</p>
-          <p>Please visit <a href="https://www.code42.com/crashplan/features/" target="_new">Crashplan's website</a> to learn more about Crashplan.</p>
+          <p>Please visit <a href="https://www.code42.com/crashplan/features/" target="_new">Crashplan&apos;s website</a> to learn more about Crashplan.</p>
         </div>
       </div>
     </div>
@@ -197,7 +197,7 @@ if (strpos($out[0], "running") !== FALSE) {
           <p>To access CrashPlan on your Drobo from your desktop computer you need to:</p>
           <ol>
             <li>Change the file <code>.ui_info</code> on your desktop machine to match the one on the Drobo.</li>
-            <li>Change the file <code>ui.properties</code> on your desktop machine to indicate the Drobo's IP address.</li>
+            <li>Change the file <code>ui.properties</code> on your desktop machine to indicate the Drobo&apos;s IP address.</li>
           </ol>
           <p>Quick reference:</p>
           <form class="form-horizontal">
@@ -457,7 +457,7 @@ if (strpos($out[0], "running") !== FALSE) {
               <p><code>#serviceHost=127.0.0.1</code></p>
               <p>And replace it with:</p>
               <p><code>serviceHost=<?php echo $droboip; ?></code></p>
-              <p><strong>This line will have to be updated if your Drobo's IP address is changed.</strong></p>
+              <p><strong>This line will have to be updated if your Drobo&apos;s IP address is changed.</strong></p>
               <p>Save the file, and start the CrashPlan client. After a few moments you should see a login screen for your Drobo.</p>
             </div>
           </div>
