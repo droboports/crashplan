@@ -3,24 +3,9 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
-$app = "crashplan";
-$appname = "Crashplan";
-$appversion = "4.3.0-2";
-$applogs = array("/tmp/DroboApps/".$app."/log.txt",
-                 "/tmp/DroboApps/".$app."/app.log",
-                 "/tmp/DroboApps/".$app."/history.log.0",
-                 "/tmp/DroboApps/".$app."/restore_files.log.0",
-                 "/tmp/DroboApps/".$app."/service.log.0");
-$appsite = "https://www.code42.com/crashplan/";
-$apppage = "https://www.crashplan.com/account/login.vtl";
-$apphelp = "https://support.code42.com/CrashPlan";
-
-exec("/bin/sh /usr/bin/DroboApps.sh sdk_version", $out, $rc);
-if ($rc === 0) {
-  $sdkversion = $out[0];
-} else {
-  $sdkversion = "2.0";
-}
+include('includes/sdkversion.php');
+include('includes/publicip.php');
+include('includes/variables.php');
 
 $op = $_REQUEST['op'];
 switch ($op) {
@@ -50,20 +35,7 @@ switch ($op) {
     break;
 }
 
-$droboip = $_SERVER['SERVER_ADDR'];
-$uiinfo = file_get_contents('/var/lib/crashplan/.ui_info');
-
-unset($out);
-exec("/usr/bin/DroboApps.sh status_app ".$app, $out, $rc);
-if ($rc !== 0) {
-  unset($out);
-  exec("/mnt/DroboFS/Shares/DroboApps/".$app."/service.sh status", $out, $rc);
-}
-if (strpos($out[0], "running") !== FALSE) {
-  $apprunning = TRUE;
-} else {
-  $apprunning = FALSE;
-}
+include('includes/appstatus.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -83,6 +55,7 @@ if (strpos($out[0], "running") !== FALSE) {
 </head>
 
 <body>
+<!-- logo bar -->
 <nav class="navbar navbar-default navbar-fixed-top">
   <div class="container-fluid">
     <div class="navbar-header">
@@ -95,7 +68,9 @@ if (strpos($out[0], "running") !== FALSE) {
     </div>
   </div>
 </nav>
+<!-- /logo bar -->
 
+<!-- title and button bar -->
 <div class="container top-toolbar">
   <div role="toolbar" class="btn-toolbar">
     <div role="group" class="btn-group">
@@ -103,20 +78,19 @@ if (strpos($out[0], "running") !== FALSE) {
     </div>
     <div role="group" class="btn-group pull-right">
 <?php if ($apprunning) { ?>
-<?php if ($sdkversion != "2.0") { ?>
       <a role="button" class="btn btn-primary" href="?op=stop" onclick="$('#pleaseWaitDialog').modal(); return true"><span class="glyphicon glyphicon-stop"></span> Stop</a>
-<?php } ?>
+      <a role="button" class="btn btn-primary" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Management website</a>
 <?php } else { ?>
-<?php if ($sdkversion != "2.0") { ?>
       <a role="button" class="btn btn-primary" href="?op=start" onclick="$('#pleaseWaitDialog').modal(); return true"><span class="glyphicon glyphicon-play"></span> Start</a>
+      <a role="button" class="btn btn-primary disabled" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Go to App</a>
 <?php } ?>
-<?php } ?>
-      <a role="button" class="btn btn-primary" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Management Website</a>
       <a role="button" class="btn btn-primary" href="<?php echo $apphelp; ?>" target="_new"><span class="glyphicon glyphicon-question-sign"></span> Help</a>
     </div>
   </div>
 </div>
+<!-- /title bar -->
 
+<!-- operation modal wait -->
 <div role="dialog" id="pleaseWaitDialog" class="modal animated bounceIn" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -130,8 +104,12 @@ if (strpos($out[0], "running") !== FALSE) {
     </div>
   </div>
 </div>
+<!-- /operation modal wait -->
 
+<!-- page sections -->
 <div class="container">
+
+<!-- operation feedback -->
   <div class="row">
     <div class="col-xs-3"></div>
     <div class="col-xs-6">
@@ -167,6 +145,7 @@ if (strpos($out[0], "running") !== FALSE) {
     </div><!-- col -->
     <div class="col-xs-3"></div>
   </div><!-- row -->
+<!-- /operation feedback -->
 
   <div class="row">
     <div class="col-xs-12">
@@ -179,22 +158,24 @@ if (strpos($out[0], "running") !== FALSE) {
       </div>
       <div id="descriptionbody" class="panel-collapse collapse in">
         <div class="panel-body">
-          <p>Crashplan is backup made simple. Crashplan enables desktop-to-Drobo, Drobo-to-Drobo, and Drobo-to-Crashplan cloud backups. You can even use Drobos from your friends since all backups are encrypted.</p>
-          <p>Please visit <a href="https://www.code42.com/crashplan/features/" target="_new">Crashplan&apos;s website</a> to learn more about Crashplan.</p>
+<?php include('includes/description.php'); ?>
+          <div class="pull-right">
+            <a role="button" class="btn btn-default" href="<?php echo $appsite; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Learn more about <?php echo $appname; ?></a>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- shorthelp -->
-  <div class="panel-group" id="shorthelp">
+  <!-- getting started -->
+  <div class="panel-group" id="gettingstarted">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#shorthelp" href="#shorthelpbody">Getting started</a></h4>
+        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#gettingstarted" href="#gettingstartedbody">Getting started</a></h4>
       </div>
-      <div id="shorthelpbody" class="panel-collapse collapse in">
+      <div id="gettingstartedbody" class="panel-collapse collapse in">
         <div class="panel-body">
-          <p>To access CrashPlan on your Drobo from your desktop computer you need to:</p>
+          <p>To access <?php echo $appname; ?> on your Drobo from your desktop computer you need to:</p>
           <ol>
             <li>Change the file <code>.ui_info</code> on your desktop machine to match the one on the Drobo.</li>
             <li>Change the file <code>ui.properties</code> on your desktop machine to indicate the Drobo&apos;s IP address.</li>
@@ -214,9 +195,9 @@ if (strpos($out[0], "running") !== FALSE) {
               </div>
             </div>
           </form>
-          <p>Please make sure to secure access to your Crashplan installation by enabling password access in
-&quot;Settings&quot; &gt; &quot;Security&quot; &gt; &quot;Require account password to access CrashPlan desktop application&quot;</p>
-          <p>Once logged in, if the folder selection screen shows the path <code>/mnt/DroboFS/Shares</code>, then CrashPlan is running on your Drobo.</p>
+          <p>Please make sure to secure access to your <?php echo $appname; ?> installation by enabling password access in
+&quot;Settings&quot; &gt; &quot;Security&quot; &gt; &quot;Require account password to access <?php echo $appname; ?> desktop application&quot;</p>
+          <p>Once logged in, if the folder selection screen shows the path <code>/mnt/DroboFS/Shares</code>, then <?php echo $appname; ?> is running on your Drobo.</p>
         </div>
       </div>
     </div>
@@ -475,55 +456,35 @@ if (strpos($out[0], "running") !== FALSE) {
       </div>
       <div id="troubleshootingbody" class="panel-collapse collapse">
         <div class="panel-body">
-          <p><strong>I cannot connect to Crashplan on the Drobo.</strong></p>
-          <?php if (! $apprunning) { ?><p>Make sure that crashplan is running. Currently it seems to be <strong>stopped</strong>.</p><?php } ?>
-          <p>Make sure that <code>.ui_info</code> and <code>ui.properties</code> are configured correctly. See sections above for more information.</p>
-          <p>You can find more information about <a href="http://support.code42.com/CrashPlan/Latest/Configuring/Using_CrashPlan_On_A_Headless_Computer" target="_new">running crashplan on a networked device</a> on the Crashplan website.</p>
+<?php include('includes/troubleshooting.php'); ?>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- logfile -->
-  <div class="panel-group" id="logfile">
+  <!-- logfiles -->
+  <div class="panel-group" id="logfiles">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#logfile" href="#logfilebody">Log information</a></h4>
+        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#logfiles" href="#logfilesbody">Log information</a></h4>
       </div>
-      <div id="logfilebody" class="panel-collapse collapse <?php if ($opstatus == "logs") { ?>in<?php } ?>">
+      <div id="logfilesbody" class="panel-collapse collapse <?php if ($opstatus == "logs") { ?>in<?php } ?>">
         <div class="panel-body">
-          <div role="toolbar" class="btn-toolbar">
-            <div role="group" class="btn-group  pull-right">
-              <a role="button" class="btn btn-default" href="?op=logs" onclick="$('#pleaseWaitDialog').modal(); return true"><span class="glyphicon glyphicon-refresh"></span> Reload logs</a>
-            </div>
-          </div>
-<?php foreach ($applogs as $applog) { ?>
-          <p>This is the content of <code><?php echo $applog; ?></code>:</p>
-          <pre class="pre-scrollable">
-<?php if (substr($applog, 0, 1) === ":") {
-  echo shell_exec(substr($applog, 1));
-} else {
-  echo file_get_contents($applog);
-} ?>
-          </pre>
-<?php } ?>
+<?php include('includes/logfiles.php'); ?>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- summary -->
-  <div class="panel-group" id="summary">
+  <!-- changelog -->
+  <div class="panel-group" id="changelog">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#summary" href="#summarybody">Summary of changes</a></h4>
+        <h4 class="panel-title"><a data-toggle="collapse" data-parent="#changelog" href="#changelogbody">Summary of changes</a></h4>
       </div>
-      <div id="summarybody" class="panel-collapse collapse">
+      <div id="changelogbody" class="panel-collapse collapse">
         <div class="panel-body">
-          <p>Changes from 4.3.0-1:</p>
-          <ol>
-            <li>Improved configuration page.</li>
-          </ol>
+<?php include('includes/changelog.php'); ?>
         </div>
       </div>
     </div>
@@ -532,6 +493,7 @@ if (strpos($out[0], "running") !== FALSE) {
     </div><!-- col -->
   </div><!-- row -->
 </div><!-- container -->
+<!-- /page sections -->
 
 <footer>
   <div class="container">

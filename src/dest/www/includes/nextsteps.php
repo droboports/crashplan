@@ -1,0 +1,3 @@
+<p>Information about creating users, sharing files and folders can be found in the <a href="<?php echo $apphelp; ?>" target="_new"><?php echo $appname; ?> support pages</a>.</p>
+<p>For larger deployments (that is, many simultaneous users) it is recommended to install the MySQL DroboApp and configure <?php echo $appname; ?> to use MySQL as the storage database instead of SQLite.</p>
+<p><?php echo $appname; ?> has mobile clients for both <a href="https://play.google.com/store/apps/details?id=com.owncloud.android" target="_new">Android</a> and <a href="https://itunes.apple.com/us/app/owncloud/id543672169" target="_new">iOS</a>, and a <a href="https://owncloud.org/install/#install-clients" target="_new">desktop clients</a> for Windows, OS X, and Linux.</p>
