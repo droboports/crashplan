@@ -7,7 +7,7 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.3.0-2"
+version="4.3.3"
 description="Online Data Backup - Offsite, Onsite, And Cloud."
 depends="java8 locale"
 webui="WebUI"

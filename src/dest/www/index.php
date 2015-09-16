@@ -12,6 +12,10 @@ switch ($op) {
   case "start":
     unset($out);
     exec("/bin/sh /usr/bin/DroboApps.sh start_app ".$app, $out, $rc);
+    if ($rc !== 0) {
+      unset($out);
+      exec("/usr/bin/setsid /mnt/DroboFS/Shares/DroboApps/".$app."/service.sh start 1> /dev/null 2>&1", $out, $rc);
+    }
     if ($rc === 0) {
       $opstatus = "okstart";
     } else {
@@ -21,6 +25,10 @@ switch ($op) {
   case "stop":
     unset($out);
     exec("/bin/sh /usr/bin/DroboApps.sh stop_app ".$app, $out, $rc);
+    if ($rc !== 0) {
+      unset($out);
+      exec("/mnt/DroboFS/Shares/DroboApps/".$app."/service.sh stop", $out, $rc);
+    }
     if ($rc === 0) {
       $opstatus = "okstop";
     } else {
@@ -79,11 +87,10 @@ include('includes/appstatus.php');
     <div role="group" class="btn-group pull-right">
 <?php if ($apprunning) { ?>
       <a role="button" class="btn btn-primary" href="?op=stop" onclick="$('#pleaseWaitDialog').modal(); return true"><span class="glyphicon glyphicon-stop"></span> Stop</a>
-      <a role="button" class="btn btn-primary" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Management website</a>
 <?php } else { ?>
       <a role="button" class="btn btn-primary" href="?op=start" onclick="$('#pleaseWaitDialog').modal(); return true"><span class="glyphicon glyphicon-play"></span> Start</a>
-      <a role="button" class="btn btn-primary disabled" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Go to App</a>
 <?php } ?>
+      <a role="button" class="btn btn-primary" href="<?php echo $apppage; ?>" target="_new"><span class="glyphicon glyphicon-globe"></span> Management website</a>
       <a role="button" class="btn btn-primary" href="<?php echo $apphelp; ?>" target="_new"><span class="glyphicon glyphicon-question-sign"></span> Help</a>
     </div>
   </div>
@@ -120,7 +127,7 @@ include('includes/appstatus.php');
         <?php echo $appname; ?> was successfully started.
       </div>
 <?php break; case "nokstart": ?>
-      <div class="alert alert-error fade in" id="opstatus">
+      <div class="alert alert-danger fade in" id="opstatus">
         <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
         <?php echo $appname; ?> failed to start. See logs below for more information.
       </div>
@@ -130,7 +137,7 @@ include('includes/appstatus.php');
         <?php echo $appname; ?> was successfully stopped.
       </div>
 <?php break; case "nokstop": ?>
-      <div class="alert alert-error fade in" id="opstatus">
+      <div class="alert alert-danger fade in" id="opstatus">
         <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
         <?php echo $appname; ?> failed to stop. See logs below for more information.
       </div>

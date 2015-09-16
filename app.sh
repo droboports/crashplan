@@ -10,7 +10,7 @@ _download_deb() {
   return 0
 }
 
-JAVA_VERSION="8u66-b01-1"
+JAVA_VERSION="8u66-b01-4"
 JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
 JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 
