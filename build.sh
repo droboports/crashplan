@@ -22,7 +22,7 @@ exec 1> >(tee -a "${logfile}")
 exec 2> >(tee -a "${logfile}" >&2)
 
 ### environment setup ###
-source crosscompile.sh
+. crosscompile.sh
 export NAME="$(basename ${PWD})"
 export DEST="${BUILD_DEST:-/mnt/DroboFS/Shares/DroboApps/${NAME}}"
 export DEPS="${PWD}/target/install"
@@ -82,6 +82,19 @@ _download_xz() {
   [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && tar -Jxvf "download/${1}" -C target
+  return 0
+}
+
+# Download a ZIP file and unpack it, removing old files.
+# $1: file
+# $2: url
+# $3: folder
+_download_zip() {
+  [[ ! -d "download" ]]      && mkdir -p "download"
+  [[ ! -d "target" ]]        && mkdir -p "target"
+  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
+  [[ ! -d "target/${3}" ]]   && unzip -d "target" "download/${1}"
   return 0
 }
 
@@ -165,12 +178,19 @@ _dist_clean() {
 }
 
 ### application-specific functions ###
-source app.sh
+. app.sh
 
-case "${1:-}" in
-  clean)     _clean ;;
-  distclean) _dist_clean ;;
-  package)   _package ;;
-  "")        _build ;;
-  *)         _build_${1} ;;
-esac
+if [ -n "${1:-}" ]; then
+  while [ -n "${1:-}" ]; do
+    case "${1}" in
+      clean)     _clean ;;
+      distclean) _dist_clean ;;
+      all)       _build ;;
+      package)   _package ;;
+      *)         _build_${1} ;;
+    esac
+    shift
+  done
+else
+  _build
+fi

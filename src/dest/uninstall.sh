@@ -6,7 +6,7 @@ prog_dir="$(dirname "$(realpath "${0}")")"
 name="$(basename "${prog_dir}")"
 data_dir="/mnt/DroboFS/System/${name}"
 tmp_dir="/tmp/DroboApps/${name}"
-logfile="${tmp_dir}/install.log"
+logfile="${tmp_dir}/uninstall.log"
 
 # boilerplate
 if ! grep -q ^tmpfs /proc/mounts; then mount -t tmpfs tmpfs /tmp; fi

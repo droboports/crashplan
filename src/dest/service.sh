@@ -7,10 +7,10 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.3.0"
-description="Cloud backup service"
+version="4.3.3"
+description="Online Data Backup - Offsite, Onsite, And Cloud."
 depends="java8 locale"
-webui=""
+webui="WebUI"
 
 prog_dir="$(dirname "$(realpath "${0}")")"
 java_tmp_dir="${prog_dir}/tmp"
@@ -20,6 +20,7 @@ pidfile="${tmp_dir}/pid.txt"
 logfile="${tmp_dir}/log.txt"
 statusfile="${tmp_dir}/status.txt"
 errorfile="${tmp_dir}/error.txt"
+uifile="/mnt/DroboFS/System/crashplan/.ui_info"
 locale="${DROBOAPPS_DIR}/locale/bin/locale"
 localedef="${DROBOAPPS_DIR}/locale/bin/localedef"
 daemon="${DROBOAPPS_DIR}/java8/bin/java"
@@ -33,14 +34,36 @@ if [ -z "${FRAMEWORK_VERSION:-}" ]; then
 fi
 
 start() {
-  echo 1048576 > /proc/sys/fs/inotify/max_user_watches
-  if ! ("${locale}" -a | grep -q ^en_US.utf8); then
-    "${localedef}" -f UTF-8 -i en_US en_US.UTF-8
+  rm -f "${statusfile}" "${errorfile}"
+
+  if [ ! -f "${locale}" ]; then
+    echo "Locale is not installed, please install and start crashplan again." > "${statusfile}"
+    echo "1" > "${errorfile}"
+    return 1
   fi
+
+  if [ ! -f "${daemon}" ]; then
+    echo "Java8 is not installed, please install and start crashplan again." > "${statusfile}"
+    echo "1" > "${errorfile}"
+    return 2
+  fi
+
+  if [ ! -f "${prog_dir}/app/lib/com.backup42.desktop.jar" ]; then
+    echo "Crashplan update failed, please reinstall crashplan." > "${statusfile}"
+    echo "1" > "${errorfile}"
+    return 3
+  fi
+
+  echo 1048576 > /proc/sys/fs/inotify/max_user_watches
   if [ ! -d "${java_tmp_dir}" ]; then
     mkdir -p "${java_tmp_dir}"
   fi
   chmod 777 "${java_tmp_dir}"
+
+  if ! ("${locale}" -a | grep -q ^en_US.utf8); then
+    "${localedef}" -f UTF-8 -i en_US en_US.UTF-8
+  fi
+
   export LC_ALL="en_US.UTF-8"
   export LANG="en_US.UTF-8"
   export LD_LIBRARY_PATH="${prog_dir}/lib:${prog_dir}/app:${LD_LIBRARY_PATH:-}"
@@ -53,6 +76,7 @@ start() {
     local pid=$!
     echo "${pid}" > "${pidfile}"
     renice 19 "${pid}"
+    ( sleep 10; echo "Crashplan is ready; click Configure to get connection details" > "${statusfile}" ) &
   fi
 }
 

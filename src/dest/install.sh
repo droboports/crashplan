@@ -41,4 +41,4 @@ if [ -d "${prog_dir}/app/backupArchives" -a ! -h "${prog_dir}/app/backupArchives
 fi
 ln -fs "${data_dir}/backupArchives" "${prog_dir}/app/"
 
-echo -n "4243,drobo" > "${data_dir}/.ui_info"
+#echo -n "4243,drobo" > "${data_dir}/.ui_info"

@@ -1,18 +1,6 @@
 # $1: file
 # $2: url
 # $3: folder
-_download_zip() {
-  [[ ! -d "download" ]]      && mkdir -p "download"
-  [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
-  [[   -d "target/${3}" ]]   && rm -v -fr "target/${3}"
-  [[ ! -d "target/${3}" ]]   && unzip -d "target" "download/${1}"
-  return 0
-}
-
-# $1: file
-# $2: url
-# $3: folder
 _download_deb() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
@@ -22,7 +10,7 @@ _download_deb() {
   return 0
 }
 
-JAVA_VERSION="8u45-b14-3"
+JAVA_VERSION="8u66-b01-4"
 JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
 JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 

@@ -1,0 +1,2 @@
+<p>This DroboApp deploys <?php echo $appname; ?> on your Drobo.</p>
+<p><?php echo $appname; ?> is backup made simple. <?php echo $appname; ?> enables desktop-to-Drobo, Drobo-to-Drobo, and Drobo-to-<?php echo $appname; ?> cloud backups. You can even use Drobos from your friends since all backups are encrypted.</p>

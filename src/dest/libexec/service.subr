@@ -16,12 +16,14 @@
 FRAMEWORK_VERSION="2.1"
 DROBOAPPS_DIR="/mnt/DroboFS/Shares/DroboApps"
 DROBOAPPS_TMPDIR="/tmp/DroboApps"
+APACHE_CONF_DIR="${DROBOAPPS_DIR}/apache/conf/includes"
 SERVICE_CONF="${DROBOAPPS_DIR}/.servicerc"
+DROBOAPPS_REPO_XML="ftp://updates.drobo.com/droboapps/2.0/droboapps_listing_2.5.2.xml"
 DROBOAPPS_REPO_URL="ftp://updates.drobo.com/droboapps/2.0/downloads"
 # http://files.drobo.com/droboapps/
 SERVICE_DEPENDS="/etc/service.depends"
 SERVICE_WEBUI="/etc/service.webui"
-DEFAULT_DEPENDS="apache perl python2"
+DEFAULT_DEPENDS=""
 STDOUT=">&1"
 STDERR=">&2"
 
@@ -43,12 +45,14 @@ SSD=/sbin/start-stop-daemon
 MKTEMP=/bin/mktemp
 WC=/usr/bin/wc
 AWK=/usr/bin/awk
+SEQ=/usr/bin/seq
+DIFF=/usr/bin/diff
 FIND=/usr/bin/find
 WGET=/usr/bin/wget
-DIFF=/usr/bin/diff
 BASENAME=/usr/bin/basename
 DIRNAME=/usr/bin/dirname
 REALPATH=/usr/bin/realpath
+XMLLINT=/usr/bin/xmllint
 
 # The service.depends file includes dependency information for legacy apps.
 #
@@ -77,55 +81,46 @@ if [ -f "${SERVICE_WEBUI}" ]; then
 fi
 
 
+# _list_remote_droboapps
+# $1: XML_URL (optional)
+# return: 0 if file downloaded correctly, wget error code otherwise.
+# This function parses the repository's XML file to extract the latest version
+# of an app.
+_list_remote_droboapps() {
+  local _repoXml="${2:-$DROBOAPPS_REPO_XML}"
+  local _xml=""
+  local _count
+
+  _xml="$($WGET --quiet -O- "${_repoXml}" 2> /dev/null)"
+  _count="$(set +x; echo "${_xml}" | $XMLLINT --xpath "count(//App/Name)" -)"
+  if [ ${_count} -ge 1 ]; then
+    for i in $($SEQ 1 ${_count}); do
+      echo -n "$(set +x; echo "${_xml}" | $XMLLINT --xpath "//App[$i]/Name/text()" -) "
+    done
+  fi
+}
+
+
+# _get_remote_version
+# $1: APP_NAME
+# $2: XML_URL (optional)
+# return: 0 if file downloaded correctly, wget error code otherwise.
+# This function parses the repository's XML file to extract the latest version
+# of an app.
+_get_remote_version() {
+  local _repoXml="${2:-$DROBOAPPS_REPO_XML}"
+  local _xpath="//App[Name/text()=\"${1}\"]/Version/text()"
+  local _version=""
+
+  _version="$($WGET --quiet -O- "${_repoXml}" 2> /dev/null | $XMLLINT --xpath "${_xpath}" -)"
+  echo "${_version}"
+}
+
+
 # _list_droboapps
 # return: a space-separated list of names of all installed DroboApps.
-_list_droboapps()
-{
-  local _appNames=""
-
-  _appNames="$($FIND ${DROBOAPPS_DIR} \( ! -regex '.*/\..*' \) -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)"
-  echo "${_appNames}"
-}
-
-
-# _list_droboapps_paths
-# return: a space-separated list of absolute paths to all installed DroboApps.
-_list_droboapps_paths()
-{
-  local _appDirs=""
-
-  _appDirs="$($FIND ${DROBOAPPS_DIR} \( ! -regex '.*/\..*' \) -mindepth 1 -maxdepth 1 -type d)"
-  echo "${_appDirs}"
-}
-
-
-# _get_app_dir
-# $1: APP_NAME
-# return: the folder of the app
-# This functions generates the app folder from its name.
-_get_app_dir()
-{
-  echo "${DROBOAPPS_DIR}/${1}"
-}
-
-
-# _get_app_tmpdir
-# $1: APP_NAME
-# return: the tmp folder of the app
-# This functions generates the app tmp folder from its name.
-_get_app_tmpdir()
-{
-  echo "${DROBOAPPS_TMPDIR}/${1}"
-}
-
-
-# _get_app_name
-# $1: APP_DIR
-# return: the name of the app
-# This functions extracts the app name from the app's folder name.
-_get_app_name()
-{
-  $BASENAME "${1}"
+_list_droboapps() {
+  $FIND "${DROBOAPPS_DIR}" \( ! -regex '.*/\..*' \) -mindepth 1 -maxdepth 1 -type d -exec $BASENAME {} \; || true
 }
 
 
@@ -133,16 +128,17 @@ _get_app_name()
 # $1: APP_NAME
 # return: 0 if service is enabled, 1 if not
 # This function assumes ${SERVICE_CONF} has already been sourced.
-_is_enabled()
-{
-  local _appName="${1}"
+_is_enabled() {
   local _value=""
 
+  if [ ! -f "${SERVICE_CONF}" ]; then
+    touch "${SERVICE_CONF}"
+  fi
   # get value of <name>_enable where name is the service name
-  _value="$($AWK -F = -v name="${_appName}_enable" '$1 == name { gsub(/"/, "", $2); print $2 }' "${SERVICE_CONF}")"
+  _value="$($AWK -F = -v name="${1}_enable" '$1 == name { gsub(/"/, "", $2); print $2 }' "${SERVICE_CONF}")"
   if [ -z "${_value}" ]; then
     # not set, so we're going to default to adding the enable line.
-    echo "${_appName}_enable=\"YES\"" >> "${SERVICE_CONF}"
+    echo "${1}_enable=\"YES\"" >> "${SERVICE_CONF}"
     return 0
   fi
   # see if the service's enable is set to YES/NO
@@ -159,19 +155,20 @@ _is_enabled()
 # $2: "YES" or "NO"
 # This function marks the app as enabled or disabled. If the app is not
 # found in ${SERVICE_CONF}, then default ${2} to "YES".
-_set_enabled()
-{
-  local _appName="${1}"
+_set_enabled() {
   local _value=""
 
+  if [ ! -f "${SERVICE_CONF}" ]; then
+    touch "${SERVICE_CONF}"
+  fi
   # get value of name_enable where name is the service name
-  _value="$($AWK -F = -v name="${_appName}_enable" '$1 == name { gsub(/"/, "", $2); print $2 }' "${SERVICE_CONF}")"
+  _value="$($AWK -F = -v name="${1}_enable" '$1 == name { gsub(/"/, "", $2); print $2 }' "${SERVICE_CONF}")"
   if [ -z "${_value}" ]; then
-    # not set, so we're going to default to adding the enable line.
-    echo "${_appName}_enable=\"YES\"" >> "${SERVICE_CONF}"
+    # not set, so we're going to default to adding the given value.
+    echo "${1}_enable=\"${2}\"" >> "${SERVICE_CONF}"
     return 0
   fi
-  $SED -i "s/${_appName}_enable=.*/${_appName}_enable=\"${2}\"/g" "${SERVICE_CONF}"
+  $SED -i "s/${1}_enable=.*/${1}_enable=\"${2}\"/g" "${SERVICE_CONF}"
 }
 
 
@@ -179,20 +176,21 @@ _set_enabled()
 # $1: APP_NAME
 # $2: "YES" or "NO"
 # Forwards everything to _set_enabled. Preserved for backwards compatibility.
-set_enabled()
-{
-  _set_enabled "${@}"
+set_enabled() {
+  _set_enabled "$@"
 }
 
 
 # _unset_enabled
 # $1: APP_NAME
 # This function removes the app from ${SERVICE_CONF}.
-_unset_enabled()
-{
+_unset_enabled() {
   local _appName="${1}"
 
-  $SED -i "/${_appName}_enable=.*/d" "${SERVICE_CONF}"
+  if [ ! -f "${SERVICE_CONF}" ]; then
+    touch "${SERVICE_CONF}"
+  fi
+  $SED -e "/${_appName}_enable=.*/d" -i "${SERVICE_CONF}"
   return 0
 }
 
@@ -202,8 +200,7 @@ _unset_enabled()
 # $2: FILE_PATH
 # $3: 0 = trim to first word (default), 1 = do not trim
 # return: the value of the variable, as is.
-_grep_variable()
-{
+_grep_variable() {
   if [ "${3:-0}" = "0" ]; then
     $GREP "${1}" "${2}" | $SED -e "s/${1}//" -e 's/\"//g' | $AWK '{print $1}'
   else
@@ -213,125 +210,147 @@ _grep_variable()
 
 
 # _get_framework_version
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the framework_version variable of the app
-_get_framework_version()
-{
-  local _framework_version=""
-  if [ -n "${framework_version+isset}" ]; then
-    _framework_version="${framework_version}"
-  elif [ -n "${Framework_version+isset}" ]; then
-    _framework_version="${Framework_version}"
-  elif [ -f "${1}/service.sh" ]; then
-    _framework_version="$(_grep_variable '^[Ff]ramework_version=' "${1}/service.sh")"
+_get_framework_version() {
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    _grep_variable '^framework_version=' "${DROBOAPPS_DIR}/${1}/service.sh"
   fi
-  echo "${_framework_version}"
 }
 
 
 # _get_name
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the name of the app
 # This functions tries to extract the app name from service.sh, and falls back
 # to the folder name for apps that do not have a service.sh.
-# This function should only be used inside _create_files.
-_get_name()
-{
-  local _name=""
-  if [ -n "${name+isset}" ]; then
-    # We're inside service.sh
-    _name="${name}"
-  elif [ -n "${Name+isset}" ]; then
-    # We're inside a legacy service.sh
-    _name="${Name}"
-  elif [ -f "${1}/service.sh" ]; then
-    _name="$(_grep_variable '^[Nn]ame=' "${1}/service.sh")"
+_get_name() {
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    _grep_variable '^[Nn]ame=' "${DROBOAPPS_DIR}/${1}/service.sh"
   fi
-  if [ -z "${_name}" ]; then
-    # no name in service.sh? fallback to folder name
-    _name="$(_get_app_name "${1}")"
-  fi
-  echo "${_name}"
 }
 
 
 # _get_version
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the version variable of the app
-_get_version()
-{
-  local _version=""
-  if [ -n "${version+isset}" ]; then
-    _version="${version}"
-  elif [ -n "${Version+isset}" ]; then
-    _version="${Version}"
-  elif [ -f "${1}/service.sh" ]; then
-    _version="$(_grep_variable '^[Vv]ersion=' "${1}/service.sh")"
+_get_version() {
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    _grep_variable '^[Vv]ersion=' "${DROBOAPPS_DIR}/${1}/service.sh"
   fi
-  echo "${_version}"
 }
 
 
 # _get_description
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the description variable of the app
-_get_description()
-{
-  local _description=""
-  if [ -n "${description+isset}" ]; then
-    _description="${description}"
-  elif [ -n "${Description+isset}" ]; then
-    _description="${Description}"
-  elif [ -f "${1}/service.sh" ]; then
-    _description="$(_grep_variable '^[Dd]escription=' "${1}/service.sh" 1)"
+_get_description() {
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    _grep_variable '^[Dd]escription=' "${DROBOAPPS_DIR}/${1}/service.sh" 1
   fi
-  echo "${_description}"
 }
 
 
 # _get_webui
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the webui variable of the app
-_get_webui()
-{
+_get_webui() {
   local _webui=""
-  local _appName=""
 
-  if [ -n "${webui+isset}" ]; then
-    _webui="${webui}"
-  elif [ -n "${Webui+isset}" ]; then
-    _webui="${Webui}"
-  elif [ -f "${1}/service.sh" ]; then
-    _webui="$(_grep_variable '^[Ww]ebui=' "${1}/service.sh" 1)"
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    _webui="$(_grep_variable '^webui=' "${DROBOAPPS_DIR}/${1}/service.sh" 1)"
   fi
   # Legacy information from /etc/service.webui
   if [ -z "${_webui}" ]; then
-    _appName="$(_get_app_name "${1}")"
-    eval _webui="\${${_appName}_webui:-}"
+    eval _webui="\${${1}_webui:-}"
   fi
   echo "${_webui}"
 }
 
 
 # _get_depends
-# $1: APP_DIR
+# $1: APP_NAME
 # return: the depends variable of the app
-_get_depends()
-{
-  local _appName=""
+_get_depends() {
   local _depends=""
 
-  _appName="$(_get_app_name "${1}")"
-  if [ -n "${depends+isset}" ]; then
-    _depends="${depends}"
-  elif [ -n "${Depends+isset}" ]; then
-    _depends="${Depends}"
-  elif [ -f "${1}/service.sh" ]; then
+  if [ -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
     # There is a service.sh
-    _depends="$($GREP '^[Dd]epends=' "${1}/service.sh")"
+    _depends="$($GREP '^depends=' "${DROBOAPPS_DIR}/${1}/service.sh")"
     if [ -n "${_depends}" ]; then
       # There is a depends in service.sh
-      _depends="$(echo "${_depends}" | $SED -e 's/^[Dd]epends=//' -e 's/\"//g')"
+      _depends="$(echo "${_depends}" | $SED -e 's/^depends=//' -e 's/\"//g')"
+      echo "${_depends}"
+      return 0
+    fi
+  fi
+  # Legacy information from /etc/service.depends
+  if $GREP -q "^${1}_depends=" "${SERVICE_DEPENDS}"; then
+    # <app_name>_depends is set, possibly empty
+    eval _depends="\${${1}_depends:-}"
+  else
+    # <app_name>_depends is not set
+    _depends="${DEFAULT_DEPENDS:-}"
+  fi
+  echo "${_depends}"
+}
+
+
+# _tgz_contains_file
+# $1: tgz file path
+# $2: filename without path
+# return: 0 if tgz contains file, 1 if not
+# This function looks in the tgzs "root" folder for the given filename.
+# It will return 0 if "filename" or "./filename" are present in the tgz.
+_tgz_contains_file() {
+  local _tgz="${1}"
+  local _file="${2}"
+
+  if $TAR -ztf "${_tgz}" "${_file}" > /dev/null 2>&1; then
+    return 0
+  elif $TAR -ztf "${_tgz}" "./${_file}" > /dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+
+# _tgz_extract_file
+# $1: tgz file path
+# $2: filename without path
+# $@: further tgz options, such as -O or -C
+# return: 0 if tgz contains file, 1 if not
+# This function looks in the tgzs "root" folder for the given filename.
+# It will return 0 if "filename" or "./filename" are present in the tgz.
+_tgz_extract_file() {
+  local _tgz="${1}"
+  shift
+  local _file="${1}"
+  shift
+
+  if ! $TAR -zxf "${_tgz}" "${_file}" "$@" 2> /dev/null; then
+    $TAR -zxf "${_tgz}" "./${_file}" "$@" 2> /dev/null
+  fi
+}
+
+
+# _extract_depends
+# $1: "update" or "install" or "service"
+# $2: TGZ_FILE file path
+# return: prints the list of dependencies.
+# This function extracts the content of the depends variable from the given
+# type. It also does some basic dependency validation.
+_extract_depends() {
+  local _tgz="${1}"
+  local _appname=""
+  local _depends=""
+
+  _appName="$($BASENAME "${_tgz}" .tgz)"
+  if _tgz_contains_file "${_tgz}" "service.sh"; then
+    _depends="$(_tgz_extract_file "${_tgz}" "service.sh" -O | $GREP '^depends=')"
+    if [ -n "${_depends}" ]; then
+      # There is a depends in service.sh
+      _depends="$(echo "${_depends}" | $SED -e 's/^depends=//' -e 's/\"//g')"
     elif $GREP -q "^${_appName}_depends=" "${SERVICE_DEPENDS}"; then
       # Legacy information from /etc/service.depends
       # <app_name>_depends is set, possibly empty
@@ -352,100 +371,20 @@ _get_depends()
 }
 
 
-# _tgz_contains_file
-# $1: tgz file path
-# $2: filename without path
-# return: 0 if tgz contains file, 1 if not
-# This function looks in the tgzs "root" folder for the given filename.
-# It will return 0 if "filename" or "./filename" are present in the tgz.
-_tgz_contains_file()
-{
-  local _tgz="${1}"
-  local _file="${2}"
-
-  if $TAR -ztf "${_tgz}" "${_file}" > /dev/null 2>&1; then
-    return 0
-  elif $TAR -ztf "${_tgz}" "./${_file}" > /dev/null 2>&1; then
-    return 0
-  fi
-  return 1
-}
-
-
-# _tgz_extract_file
-# $1: tgz file path
-# $2: filename without path
-# $@: further tgz options, such as -O or -C
-# return: 0 if tgz contains file, 1 if not
-# This function looks in the tgzs "root" folder for the given filename.
-# It will return 0 if "filename" or "./filename" are present in the tgz.
-_tgz_extract_file()
-{
-  local _tgz="${1}"
-  shift
-  local _file="${1}"
-  shift
-
-  if ! $TAR -zxf "${_tgz}" "${_file}" "${@}" 2> /dev/null; then
-    $TAR -zxf "${_tgz}" "./${_file}" "${@}" 2> /dev/null
-  fi
-}
-
-
-# _extract_depends
-# $1: "update" or "install" or "service"
-# $2: TGZ_FILE file path
-# return: prints the list of dependencies.
-# This function extracts the content of the depends variable from the given
-# type. It also does some basic dependency validation.
-_extract_depends()
-{
-  local _tgz="${1}"
-  local _depends=""
-
-  _tgzName="$($BASENAME "${_tgz}" .tgz)"
-  if _tgz_contains_file "${_tgz}" "service.sh"; then
-    _depends="$(_tgz_extract_file "${_tgz}" "service.sh" -O | $GREP '^[Dd]epends=')"
-    if [ -n "${_depends}" ]; then
-      # There is a depends in service.sh
-      _depends="$(echo "${_depends}" | $SED -e 's/^[Dd]epends=//' -e 's/\"//g')"
-    elif $GREP -q "^${_tgzName}_depends=" "${SERVICE_DEPENDS}"; then
-      # Legacy information from /etc/service.depends
-      # <app_name>_depends is set, possibly empty
-      eval _depends="\${${_tgzName}_depends:-}"
-    else
-      # <app_name>_depends is not set
-      _depends="${DEFAULT_DEPENDS:-}"
-    fi
-  elif $GREP -q "^${_tgzName}_depends=" "${SERVICE_DEPENDS}"; then
-    # Legacy information from /etc/service.depends
-    # <app_name>_depends is set, possibly empty
-    eval _depends="\${${_tgzName}_depends:-}"
-  else
-    # <app_name>_depends is not set
-    _depends="${DEFAULT_DEPENDS:-}"
-  fi
-  echo "${_depends}"
-}
-
-
 # _contains_depend
 # $1: DEPENDS
 # $2: APP_NAME
 # return: 0 if APP_NAME is in DEPENDS, 1 otherwise
 # This function extracts the content of the depends variable from the given
 # type. It also does some basic dependency validation.
-_contains_depend()
-{
-  local _depends="${1}"
-  local _appName="${2}"
+_contains_depend() {
   local _service=""
 
   if [ -z "${_depends}" ]; then
     return 1
   fi
-  for _service in ${_depends}; do
-    if [ "${_service}" = "${_appName}" ]; then
+  for _service in ${1}; do
+    if [ "${_service}" = "${2}" ]; then
       return 0
     fi
   done
@@ -454,41 +393,88 @@ _contains_depend()
 
 
 # _create_files
-# $1: APP_DIR
+# $1: APP_NAME
 # This function generates all files inside the app-specific tmp folder.
-# It extracts the SDK variables from service.sh and creates the corresponding
-# files.
-_create_files()
-{
-  local _appName=""
-  local _name=""
-  local _version=""
-  local _description=""
-  local _framework_version=""
-  local _depends=""
-  local _webui=""
-  local _appTmpDir=""
+# This can only be called from inside service.sh.
+_create_files() {
+  local _appTmpDir="${DROBOAPPS_TMPDIR}/${1}"
 
-  # no service.sh, nothing to do
-  if [ ! -f "${1}/service.sh" ]; then
-    return 0
-  fi
-
-  _appName="$(_get_app_name "${1}")"
-  _name="$(_get_name "${1}")"
-  _version="$(_get_version "${1}")"
-  _description="$(_get_description "${1}")"
-  _framework_version="$(_get_framework_version "${1}")"
-  _depends="$(_get_depends "${1}")"
-  _webui="$(_get_webui "${1}")"
-
-  _appTmpDir="$(_get_app_tmpdir "${_appName}")"
   if [ ! -d "${_appTmpDir}" ]; then
     $MKDIR -p "${_appTmpDir}"
     if [ ! -d "${_appTmpDir}" ]; then
       return 1
     fi
   fi
+
+  if [ -n "${name+isset}" ]; then
+    echo "${name}" > "${_appTmpDir}/name.txt"
+  elif [ -n "${Name+isset}" ]; then
+    # We're inside a legacy service.sh
+    echo "${Name}" > "${_appTmpDir}/name.txt"
+  else
+    echo "${_appName}" > "${_appTmpDir}/name.txt"
+  fi
+
+  if [ -n "${version+isset}" ]; then
+    echo "${version}" > "${_appTmpDir}/version.txt"
+  elif [ -n "${Version+isset}" ]; then
+    # We're inside a legacy service.sh
+    echo "${Version}" > "${_appTmpDir}/version.txt"
+  fi
+
+  if [ -n "${description+isset}" ]; then
+    echo "${description}" > "${_appTmpDir}/description.txt"
+  elif [ -n "${Description+isset}" ]; then
+    # We're inside a legacy service.sh
+    echo "${Description}" > "${_appTmpDir}/description.txt"
+  fi
+
+  if [ -n "${framework_version+isset}" ]; then
+    echo "${framework_version}" > "${_appTmpDir}/framework_version.txt"
+  fi
+
+  if [ -n "${depends+isset}" ]; then
+    echo "${depends}" > "${_appTmpDir}/depends.txt"
+  fi
+
+  if [ -n "${webui+isset}" ]; then
+    echo "${webui}" > "${_appTmpDir}/webui.txt"
+  fi
+}
+
+
+# _create_app_files
+# $1: APP_NAME
+# This function generates all files inside the app-specific tmp folder.
+# It extracts the SDK variables from service.sh and creates the corresponding
+# files.
+_create_app_files() {
+  local _appTmpDir="${DROBOAPPS_TMPDIR}/${1}"
+  local _name=""
+  local _version=""
+  local _description=""
+  local _framework_version=""
+  local _depends=""
+  local _webui=""
+
+  if [ ! -d "${_appTmpDir}" ]; then
+    $MKDIR -p "${_appTmpDir}"
+    if [ ! -d "${_appTmpDir}" ]; then
+      return 1
+    fi
+  fi
+
+  # no service.sh, nothing to do
+  if [ ! -f "${DROBOAPPS_DIR}/${1}/service.sh" ]; then
+    return 0
+  fi
+
+  _name="$(_get_name "${1}")"
+  _version="$(_get_version "${1}")"
+  _description="$(_get_description "${1}")"
+  _framework_version="$(_get_framework_version "${1}")"
+  _depends="$(_get_depends "${1}")"
+  _webui="$(_get_webui "${1}")"
 
   if [ -n "${_name}" ]; then
     echo "${_name}" > "${_appTmpDir}/name.txt"
@@ -515,15 +501,13 @@ _create_files()
 # $1: FILE_PATH
 # $2: FILE_PATH
 # return: 0 = files are equal, 1 = files are different, 2 = file missing.
-_file_equals()
-{
+_file_equals() {
   $DIFF -q "${1}" "${2}" > /dev/null 2>&1
 }
 
 
 # _deploy_apache_conf
-# $1: APP_DIR
-# $2: APP_NAME.conf file path
+# $1: APP_NAME
 # Deploy an apache configuration file.
 # For legacy apps (i.e., apps that do not declare a "depends" variable),
 # Apache is automatically downloaded and installed if not already present.
@@ -531,53 +515,24 @@ _file_equals()
 # automatically installed unless it is declared as a dependency, and its
 # configuration file is not automatically deployed.
 # If the configuration file is deployed, apache is gracefully restarted.
-_deploy_apache_conf()
-{
-  local _appDir="${1}"
-  local _appConf="${2}"
-  local _depends=""
+_deploy_apache_conf() {
+  local _appConf="${DROBOAPPS_DIR}/${1}/${1}.conf"
   local _apacheName="apache"
-  local _apacheDir="$(_get_app_dir "${_apacheName}")"
-  local _dependsApache=0
-  local _apacheConf=""
+  local _apacheDir="${DROBOAPPS_DIR}/${_apacheName}"
+  local _apacheConf="${APACHE_CONF_DIR}/${1}.conf"
+  local _depends=""
   local _restart=0
 
   if [ ! -f "${_appConf}" ]; then
     return 0
   fi
-  # After this point we have an apache conf file.
-
-  # Decide whether apache is required.
-  if [ -f "${_appDir}/service.sh" ]; then
-    # if there is a service.sh, then check for "depends".
-    _depends="$(_get_depends "${_appDir}")"
-    if [ -z "${_depends}" ]; then
-      # The lack of "depends" implies a legacy app.
-      # In this case, we assume that apache is required.
-      _dependsApache=1
-    elif _contains_depend "${_depends}" "${_apacheName}"; then
-      _dependsApache=1
-    fi
-  else
-    # There is no service.sh.
-    # In this case we assume that the presence of an apache conf file means
-    # apache is required.
-    _dependsApache=1
-  fi
-
-  if [ ${_dependsApache} -eq 0 ]; then
-    return 0
-  fi
-  # After this point, apache is required.
 
   _set_enabled "${_apacheName}" "YES"
   if ! _start_depend "${_apacheName}"; then
     echo "Unable to start apache." >&2
     return 1
   fi
-  # After this point, apache is installed.
 
-  _apacheConf="${_apacheDir}/conf/includes/$($BASENAME "${_appConf}")"
   if [ ! -f "${_apacheConf}" ]; then
     # File is not there.
     $CP "${_appConf}" "${_apacheConf}"
@@ -596,7 +551,7 @@ _deploy_apache_conf()
 
 
 # _remove_apache_conf
-# $1: APP_NAME.conf file path
+# $1: APP_NAME
 # Remove an apache configuration file.
 # For legacy apps (i.e., apps that do not declare a "depends" variable),
 # Apache is automatically downloaded and installed if not already present.
@@ -604,17 +559,15 @@ _deploy_apache_conf()
 # automatically installed unless it is declared as a dependency, and its
 # configuration file is not automatically deployed.
 # If the configuration file is deployed, apache is gracefully restarted.
-_remove_apache_conf()
-{
-  local _appConf="${1}"
+_remove_apache_conf() {
+  local _appConf="${DROBOAPPS_DIR}/${1}/${1}.conf"
   local _apacheName="apache"
-  local _apacheDir="$(_get_app_dir "${_apacheName}")"
-  local _apacheConf=""
+  local _apacheDir="${DROBOAPPS_DIR}/${_apacheName}"
+  local _apacheConf="${APACHE_CONF_DIR}/${1}.conf"
 
   if [ ! -f "${_appConf}" ]; then
     return 0
   fi
-  # After this point we have an apache conf file.
 
   if [ ! -d "${_apacheDir}" ]; then
     # Apache is not installed.
@@ -622,7 +575,6 @@ _remove_apache_conf()
   fi
   # After this point, apache is installed.
 
-  _apacheConf="${_apacheDir}/conf/includes/$($BASENAME "${_appConf}")"
   if [ ! -f "${_apacheConf}" ]; then
     return 0
   fi
@@ -640,8 +592,7 @@ _remove_apache_conf()
 # This function iterates through starts all given services.
 # Depending on the state of the required service, it downloads, installs,
 # and starts it.
-_start_depends()
-{
+_start_depends() {
   local _depend
   for _depend in "$@"; do
     if ! _start_depend "${_depend}"; then
@@ -654,9 +605,8 @@ _start_depends()
 # _count
 # $@: items to count
 # return: number of arguments
-_count()
-{
-  echo "${#}"
+_count() {
+  echo "$#"
 }
 
 
@@ -665,43 +615,41 @@ _count()
 # return: 0 if dependency started without error, 1 if not
 # Depending on the state of the required service, it downloads, installs,
 # and starts it.
-_start_depend()
-{
-  local _appName="${1}"
-  local _appDir="$(_get_app_dir "${_appName}")"
-  local _foundApp=""
+_start_depend() {
+  local _appDir="${DROBOAPPS_DIR}/${1}"
   local _oldStack="${_DEPENDS_STACK}"
 
   if [ $(_count ${_DEPENDS_STACK}) -ge 10 ]; then
     echo "Dependency chain is longer than 10: ${_DEPENDS_STACK}." >&2
     return 1
   fi
-  _DEPENDS_STACK="${_DEPENDS_STACK} ${_appName}"
+  _DEPENDS_STACK="${_DEPENDS_STACK} ${1}"
 
   if [ ! -d "${_appDir}" ]; then
     # App is not installed
-    if ! _download_app "${_appName}"; then
+    if ! _download_app "${1}"; then
       _DEPENDS_STACK="${_oldStack}"
       return 1
     fi
-    if ! _install_app "${DROBOAPPS_DIR}/${_appName}.tgz"; then
+    if ! _install_app "${DROBOAPPS_DIR}/${1}.tgz"; then
       _DEPENDS_STACK="${_oldStack}"
       return 1
     fi
   fi
   # If it's not enabled, return 1.
-  if ! _is_enabled "${_appName}"; then
-    eval echo \"Dependency ${_appName} is not enabled.\"  ${STDERR}
+  if ! _is_enabled "${1}"; then
+    eval echo \"Dependency ${1} is not enabled.\"  ${STDERR}
     _DEPENDS_STACK="${_oldStack}"
     return 1
   fi
   # If it isn't running, start it.
-  if ! _is_app_running "${_appDir}"; then
-    eval echo \"Starting dependency: ${_appName}\"  ${STDOUT}
-    _prestart_app "${_appDir}"
+  if ! _is_app_running "${1}"; then
+    eval echo \"Starting dependency: ${1}\"  ${STDOUT}
+    _create_app_files "${_appName}"
+    _prestart_app "${1}"
     if [ -f "${_appDir}/service.sh" ]; then
       if (cd "${_appDir}" && $SH "${_appDir}/service.sh" start); then
-        echo "${_appName} successfully started."
+        echo "${1} successfully started."
       else
         _DEPENDS_STACK="${_oldStack}"
         return 1
@@ -715,20 +663,21 @@ _start_depend()
 # _download_app
 # $1: APP_NAME
 # $2: BASE_URL (optional)
+# $3: force download (default 0 == no, 1 == yes)
 # return: 0 if file downloaded correctly, wget error code otherwise.
 # This function downloads an app from ftp://update.drobo.com.
 # Files are downloaded and placed in ${DROBOAPPS_DIR}, but only if there isn't
 # a similarly named file in ${DROBOAPPS_DIR}.
 # This function creates a temporary folder under /mnt/DroboFS/System/tmp,
 # in which it downloads the tgz file, and places the wget log.
-_download_app()
-{
+_download_app() {
   local _repoUrl="${2:-$DROBOAPPS_REPO_URL}"
   local _tmpDir="/mnt/DroboFS/System/tmp"
   local _tmpWgetDir=""
   local _result=0
+  local _force=${3:-0}
 
-  if [ -f "${DROBOAPPS_DIR}/${1}.tgz" ]; then
+  if [ -f "${DROBOAPPS_DIR}/${1}.tgz" ] && [ ${_force} -eq 0 ]; then
     echo "Skipping download of ${1}. File is already in ${DROBOAPPS_DIR}."
     return 0
   fi
@@ -762,16 +711,13 @@ _download_app()
 # _install_app
 # $1: TGZ_FILE file path
 # Install a single app from the full path of the TGZ file.
-_install_app()
-{
+_install_app() {
   local _tgz="${1:-}"
-  local _start=${2:-0}
-  local _tgzName=""
+  local _appName=""
   local _appDir=""
   local _depends=""
-  local _appName=""
 
-  if [ -z "${_tgz}" ]; then
+  if [ -z "${1}" ]; then
     # no TGZ given
     echo "Missing TGZ file path." >&2
     return 1
@@ -783,15 +729,15 @@ _install_app()
     return 1
   fi
 
-  _tgzName="$($BASENAME "${_tgz}" .tgz)"
-  _appDir="$(_get_app_dir "${_tgzName}")"
+  _appName="$($BASENAME "${_tgz}" .tgz)"
+  _appDir="${DROBOAPPS_DIR}/${_appName}"
 
   # Check dependencies before untar and mkdir
   _depends="$(_extract_depends "${_tgz}")"
   if [ -n "${_depends}" ]; then
-    echo "Checking service dependencies for ${_tgzName}."
+    echo "Checking service dependencies for ${_appName}."
     if ! _start_depends ${_depends}; then
-      eval echo \"Unable to start dependencies for ${_tgzName}.\" ${STDERR}
+      eval echo \"Unable to start dependencies for ${_appName}.\" ${STDERR}
       return 1
     fi
   fi
@@ -800,14 +746,14 @@ _install_app()
   # If the directory already exists, this is an upgrade and
   # untar on top of the existing install.
   if [ -d "${_appDir}" ]; then
-    eval echo \"Upgrading ${_tgzName}.\" ${STDOUT}
+    eval echo \"Upgrading ${_appName}.\" ${STDOUT}
     if _tgz_contains_file "${_tgz}" "update.sh"; then
       _tgz_extract_file "${_tgz}" "update.sh" -C "${_appDir}"
       # Launch the update script.
       (cd "${_appDir}" && $SH "${_appDir}/update.sh" && $RM -f "${_appDir}/update.sh")
     fi
   else
-    eval echo \"Installing ${_tgzName}.\" ${STDOUT}
+    eval echo \"Installing ${_appName}.\" ${STDOUT}
     $MKDIR -p "${_appDir}"
     $CP "/sys/devices/dri_dnas_primary/dnas_adp_1/driver/serial" "${_appDir}/host_uid.txt"
   fi
@@ -816,19 +762,17 @@ _install_app()
   if [ -f "${_appDir}/update.sh" ]; then
     $RM -f "${_appDir}/update.sh"
   fi
-  _create_files "${_appDir}"
+  _create_app_files "${_appName}"
 
   # if there is an install.sh file, run it.
   if [ -f "${_appDir}/install.sh" ]; then
-    eval echo \"Running post-install script for ${_tgzName}.\" ${STDOUT}
+    eval echo \"Running post-install script for ${_appName}.\" ${STDOUT}
     (cd "${_appDir}" && $SH "${_appDir}/install.sh" && $RM -f "${_appDir}/install.sh")
   fi
 
   # if there is an apache conf file, install it, and restart apache.
-  if [ -f "${_appDir}/${_tgzName}.conf" ]; then
-    if ! _deploy_apache_conf "${_appDir}" "${_appDir}/${_tgzName}.conf"; then
-      echo "Unable to deploy ${_tgzName}.conf." >&2
-    fi
+  if ! _deploy_apache_conf "${_appName}"; then
+    echo "Unable to deploy ${_appName}.conf." >&2
   fi
 }
 
@@ -840,34 +784,29 @@ _install_app()
 # removes the enable state from ${SERVICE_CONF}, then removes the app's folder
 # and /tmp/DroboApps folder.
 # Apps can only be uninstalled if there are no other apps that depend on them.
-_uninstall_app()
-{
-  local _tmpDir=""
-  local _appName="${1}"
-  local _dir="$(_get_app_dir "${_appName}")"
+_uninstall_app() {
+  local _appDir="${DROBOAPPS_DIR}/${1}"
+  local _tmpDir="${DROBOAPPS_TMPDIR}/${1}"
   local _force=${2:-0}
 
-  local _appDirs=""
-  local _appDir=""
-  local _depName=""
+  local _apps=""
+  local _app=""
   local _depends=""
-  local _depend=""
 
-  if [ ! -d "${_dir}" ]; then
+  if [ ! -d "${_appDir}" ]; then
     eval echo \"${_appName} is not installed.\" ${STDERR}
     return 1
   fi
 
   # check that there are no other apps that depend on this one.
   if [ ${_force} -eq 0 ]; then
-    _appDirs="$(_list_droboapps_paths)"
-    if [ -n "${_appDirs}" ]; then
-      for _appDir in ${_appDirs}; do
-        if [ -f "${_appDir}/service.sh" ]; then
-          _depends="$(_get_depends "${_appDir}")"
-          if _contains_depend "${_depends}" "${_appName}"; then
-            _depName="$(_get_app_name "${_appDir}")"
-            eval echo \"Cannot uninstall ${1}: ${_depName} depends on it.\" ${STDERR}
+    _apps="$(_list_droboapps)"
+    if [ -n "${_apps}" ]; then
+      for _app in ${_apps}; do
+        if [ -f "${DROBOAPPS_DIR}/${_app}/service.sh" ]; then
+          _depends="$(_get_depends "${_app}")"
+          if _contains_depend "${_depends}" "${1}"; then
+            eval echo \"Cannot uninstall ${1}: ${_app} depends on it.\" ${STDERR}
             return 1
           fi
         fi
@@ -876,46 +815,81 @@ _uninstall_app()
   fi
 
   # Stop the app
-  if [ -f "${_dir}/service.sh" ] && _is_app_running "${_dir}"; then
-    (cd "${_dir}" && $SH "${_dir}/service.sh" stop)
+  if [ -f "${_appDir}/service.sh" ] && _is_app_running "${1}"; then
+    (cd "${_appDir}" && $SH "${_appDir}/service.sh" stop)
   fi
 
   # Call uninstall
-  if [ -f "${_dir}/uninstall.sh" ]; then
-    (cd "${_dir}" && $SH "${_dir}/uninstall.sh")
+  if [ -f "${_appDir}/uninstall.sh" ]; then
+    (cd "${_appDir}" && $SH "${_appDir}/uninstall.sh")
   fi
 
   # Remove the enabled state
-  _unset_enabled "${_appName}"
+  _unset_enabled "${1}"
 
   # If there is an apache conf file, remove it, and restart apache.
-  if [ -f "${_dir}/${_appName}.conf" ]; then
-    if ! _remove_apache_conf "${_dir}/${_appName}.conf"; then
-      echo "Unable to remove ${_appName}.conf." >&2
-    fi
+  if ! _remove_apache_conf "${1}"; then
+    echo "Unable to remove ${1}.conf." >&2
   fi
 
   # Delete the app folder
-  if [ -d "${_dir}" ]; then
-    $RM -fr "${_dir}"
+  if [ -d "${_appDir}" ]; then
+    $RM -fr "${_appDir}"
   fi
 
   # Delete the /tmp/DroboApps/app folder
-  _tmpDir="$(_get_app_tmpdir "${_appName}")"
   if [ -d "${_tmpDir}" ]; then
     $RM -fr "${_tmpDir}"
   fi
 }
 
 
+# _status_app
+# $1: APP_NAME
+# return: the status message of the app.
+# Returns the status message of a single app.
+_status_app() {
+  local _appDir="${DROBOAPPS_DIR}/${1}"
+  local _appTmpDir="${DROBOAPPS_TMPDIR}/${1}"
+  local _status
+  local _enabled
+  local _running
+
+  if [ ! -d "${_appDir}" ]; then
+    _status="${_appName} is not installed."
+  elif [ ! -f "${_appDir}/service.sh" ]; then
+    _status="${_appName} is enabled and running."
+  else
+    _status="$(cd "${_appDir}" && $SH "${_appDir}/service.sh" status 2> /dev/null || true)"
+    if [ -z "${_status}" ] || ! (echo "${_status}" | $GREP -q "stopped") && ! (echo "${_status}" | $GREP -q "running"); then
+      # Implementing fallback to SDK 2.0 for apps that have custom status messages.
+      if _is_enabled "${_appName}"; then
+        _enabled="enabled"
+      else
+        _enabled="disabled"
+      fi
+      if $SSD -K -t -p "${_appTmpDir}/pid.txt" -q 2> /dev/null; then
+        _running="running"
+      else
+        _running="stopped"
+      fi
+      _status="${_appName} is ${_enabled} and ${_running}"
+    else
+      _status=$(echo "${_status}" | $GREP ".* is .* and .*" 2> /dev/null || true)
+    fi
+  fi
+
+  echo "${_status}"
+}
+
+
 # _is_app_running
-# $1: APP_DIR
+# $1: APP_NAME
 # return: 0 if app is running, 1 if not running or if pidfile does not exist.
 # This function delegates the task of determining the state of an app to its
 # service.sh. If the app does not have a service.sh, it defaults to running.
-_is_app_running()
-{
-  echo "$(_status_app "${1}")" | $GREP -q running
+_is_app_running() {
+  _status_app "${1}" | $GREP -q running
 }
 
 
@@ -928,8 +902,7 @@ _is_app_running()
 # not running.
 # Service.sh can redefine this function to customize its implementation,
 # as long as the return semantics are respected.
-is_running()
-{
+is_running() {
   local _pidfile="${1:-}"
   local _daemon="${2:-}"
 
@@ -963,9 +936,8 @@ is_running()
 # An app can have custom implementations of both is_running and is_stopped,
 # which both return false (1) at the same, if the app is, for example, in the
 # middle of a graceful shutdown.
-is_stopped()
-{
-  if is_running ${1} ${2}; then
+is_stopped() {
+  if is_running ${1:-} ${2:-}; then
     return 1
   fi
   return 0
@@ -976,37 +948,31 @@ is_stopped()
 # $1: function name
 # return: 0 if function exists, 1 if not
 # This function checks the existence of a shell function.
-_function_exists()
-{
+_function_exists() {
   type "${1}" 2> /dev/null | $GREP -q function
 }
 
 
 # _prestart_app
-# $1: APP_DIR
+# $1: APP_NAME
 # Perform pre-start operations for a given app.
 # This code is shared by service.sh and DroboApps.sh.
-_prestart_app()
-{
-  local _appDir="${1}"
-  local _appName="$(_get_app_name "${_appDir}")"
-
-  _create_files "${_appDir}"
-  _set_enabled "${_appName}" "YES"
-  if ! _file_equals "${_SERIAL_NUMBER}" "${_appDir}/host_uid.txt"; then
-    $CP "${_SERIAL_NUMBER}" "${_appDir}/host_uid.txt"
+_prestart_app() {
+  _set_enabled "${1}" "YES"
+  if ! _file_equals "${_SERIAL_NUMBER}" "${DROBOAPPS_DIR}/${1}/host_uid.txt"; then
+    $CP "${_SERIAL_NUMBER}" "${DROBOAPPS_DIR}/${1}/host_uid.txt"
   fi
 }
 
 
 # start_service
 # This function is called by service.sh to start the app.
-start_service()
-{
+start_service() {
   local _appDir="$($DIRNAME "$($REALPATH "${0}")")"
-  local _appName="$(_get_app_name "${_appDir}")"
+  local _appName="$($BASENAME "${_appDir}")"
 
-  _prestart_app "${_appDir}"
+  _create_files "${_appName}"
+  _prestart_app "${_appName}"
 
   # see if the service is already running
   if is_running "${pidfile:-}" "${daemon:-}"; then
@@ -1015,17 +981,14 @@ start_service()
   fi
 
   # if there is an apache conf file, install it, and restart apache.
-  if [ -f "${_appDir}/${_appName}.conf" ]; then
-    if ! _deploy_apache_conf "${_appDir}" "${_appDir}/${_appName}.conf"; then
-      echo "Unable to deploy ${_appName}.conf." >&2
-    fi
+  if ! _deploy_apache_conf "${_appName}"; then
+    echo "Unable to deploy ${_appName}.conf." >&2
   fi
 
   # if the depends variable is set, verify any services that need to be
   # started first are taken care of
-  _depends="$(_get_depends "${_appDir}")"
-  if [ -n "${_depends}" ]; then
-    if ! _start_depends ${_depends}; then
+  if [ -n "${depends}" ]; then
+    if ! _start_depends ${depends}; then
       echo "Unable to resolve dependencies for ${_appName}." >&2
       return 1
     fi
@@ -1048,10 +1011,9 @@ start_service()
 # or by SIGKILLing the pid.
 # If there is no pidfile, service.sh must redefine is_running and
 # is_stopped.
-stop_service()
-{
+stop_service() {
   local _appDir="$($DIRNAME "$($REALPATH "${0}")")"
-  local _appName="$(_get_app_name "${_appDir}")"
+  local _appName="$($BASENAME "${_appDir}")"
   local _wait=${1:-0}
   local _retries=10
 
@@ -1074,7 +1036,7 @@ stop_service()
       break
     fi
     if [ ${_wait} -eq 0 ]; then
-      _retries=$(( ${_retries} - 1 ))
+      _retries=$(( _retries - 1 ))
     fi
     sleep 1
   done
@@ -1097,16 +1059,36 @@ stop_service()
 }
 
 
+# kill_service
+# This function is called by service.sh to kill the app.
+# Service.sh may provide a "force_stop" function that will be called in case
+# there is no pidfile.
+# If there is no pidfile, service.sh must redefine force_stop.
+kill_service() {
+  local _appDir="$($DIRNAME "$($REALPATH "${0}")")"
+  local _appName="$($BASENAME "${_appDir}")"
+
+  if _function_exists "force_stop"; then
+    # Delegate to "force_stop" function.
+    force_stop
+  else
+    return 1
+  fi
+
+  if [ -n "${pidfile:-}" ] && [ -f "${pidfile:-}" ]; then
+    $RM -f "${pidfile}"
+  fi
+
+  _poststop_app "${_appName}"
+}
+
+
 # _poststop_app
-# $1: APP_DIR
+# $1: APP_NAME
 # Perform post-stop operations for a given app.
 # This code is shared by service.sh and DroboApps.sh.
-_poststop_app()
-{
-  local _appDir="${1}"
-  local _appName="$(_get_app_name "${_appDir}")"
-
-  _set_enabled "${_appName}" "NO"
+_poststop_app() {
+  _set_enabled "${1}" "NO"
 }
 
 
@@ -1114,8 +1096,7 @@ _poststop_app()
 # Default implementation of stop.
 # Relies on the pidfile and daemon variables.
 # Service.sh can redefine this function to customize its implementation.
-stop()
-{
+stop() {
   if [ -z "${pidfile:-}" ]; then
     # Missing pidfile argument.
     echo "Missing pidfile information in service.sh." >&2
@@ -1134,8 +1115,7 @@ stop()
 # Default implementation of force_stop.
 # Relies on the pidfile and daemon variables.
 # Service.sh can redefine this function to customize its implementation.
-force_stop()
-{
+force_stop() {
   if [ -z "${pidfile:-}" ]; then
     # Missing pidfile argument.
     echo "Missing pidfile information in service.sh." >&2
@@ -1153,51 +1133,9 @@ force_stop()
 # restart
 # Default implementation of a restart function.
 # Service.sh can redefine this function as needed.
-restart()
-{
-  stop_service || true
+restart() {
+  stop_service 1 || true
   start_service
-}
-
-
-# _status_app
-# $1: APP_DIR
-# return: the status message of the app.
-# Returns the status message of a single app.
-_status_app()
-{
-  local _appDir="${1}"
-  local _appName="$(_get_app_name "${_appDir}")"
-  local _appTmpDir="$(_get_app_tmpdir "${_appName}")"
-  local _status
-  local _enabled
-  local _running
-
-  if [ ! -d "${_appDir}" ]; then
-    _status="${_appName} is not installed."
-  elif [ ! -f "${_appDir}/service.sh" ]; then
-    _status="${_appName} is enabled and running."
-  else
-    _status="$(cd "${_appDir}" && $SH "${_appDir}/service.sh" status 2> /dev/null || true)"
-    if [ -z "${_status}" ] || ! (echo "${_status}" | $GREP -q "stopped") && ! (echo "${_status}" | $GREP -q "running"); then
-      # Implementing fallback to SDK 2.0 for apps that have custom status messages.
-      if _is_enabled "${_appName}"; then
-        _enabled="enabled"
-      else
-        _enabled="disabled"
-      fi
-      if $SSD -K -t -p "${_appTmpDir}/pid.txt" -q 2> /dev/null; then
-        _running="running"
-      else
-        _running="stopped"
-      fi
-      _status="${_appName} is ${_enabled} and ${_running}"
-    else
-      _status=$(echo "${_status}" | $GREP ".* is .* and .*" 2> /dev/null || true)
-    fi
-  fi
-
-  echo "${_status}"
 }
 
 
@@ -1205,10 +1143,9 @@ _status_app()
 # Print out a status message about if the service is enabled/disabled and
 # running/stopped.
 # Service.sh can redefine this function as needed.
-status()
-{
+status() {
   local _appDir="$($DIRNAME "$($REALPATH "${0}")")"
-  local _appName="$(_get_app_name "${_appDir}")"
+  local _appName="$($BASENAME "${_appDir}")"
   local _enabled
   local _running
 
@@ -1233,8 +1170,7 @@ status()
 # usage
 # Default implementation of usage help message, which generates the text besed
 # on the defined functions.
-usage()
-{
+usage() {
   local _message=""
   local _items=0
 
@@ -1249,7 +1185,15 @@ usage()
     if [ ${_items} -gt 0 ]; then
       _message="${_message}|"
     fi
-    _message="${_message}stop"
+    _message="${_message}stop|waitstop"
+    _items=$(( ${_items} + 2 ))
+  fi
+
+  if _function_exists "force_stop"; then
+    if [ ${_items} -gt 0 ]; then
+      _message="${_message}|"
+    fi
+    _message="${_message}kill"
     _items=$(( ${_items} + 1 ))
   fi
 
@@ -1286,8 +1230,7 @@ usage()
 # main
 # Simplified argument handling for apps.
 # Service.sh can redefine this function as needed.
-main()
-{
+main() {
   local _operation="${1:-}"
   shift || true
 
@@ -1295,9 +1238,14 @@ main()
     start)        start_service "$@" ;;
     stop)         stop_service "$@" ;;
     waitstop)     stop_service 1 "$@" ;;
+    kill)         kill_service "$@" ;;
     restart)      restart "$@" ;;
     reload)       reload "$@" ;;
     status)       status "$@" ;;
+    name)         eval echo \"${name}\" ${STDOUT} ;;
+    version)      eval echo \"${version}\" ${STDOUT} ;;
+    depends)      eval echo \"${depends}\" ${STDOUT} ;;
+    sdk_version)  eval echo \"${framework_version}\" ${STDOUT} ;;
     *)            usage "$@" ;;
   esac
 }

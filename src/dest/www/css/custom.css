@@ -1,0 +1,23 @@
+body {
+  padding-top: 50px;
+}
+
+.top-toolbar {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.tab-content {
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+p.title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 175%;
+  font-weight: bold;
+}
