@@ -16,10 +16,15 @@ set -o xtrace
 timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
 logfile="logfile_${timestamp}.txt"
 echo "${0} ${@}" > "${logfile}"
-# save stdout to logfile
-exec 1> >(tee -a "${logfile}")
-# redirect errors to stdout
-exec 2> >(tee -a "${logfile}" >&2)
+if [ -z "${CONTINUOUS_INTEGRATION:-}" ]; then
+  # save stdout to logfile
+  exec 1> >(tee -a "${logfile}")
+  # redirect errors to stdout
+  exec 2> >(tee -a "${logfile}" >&2)
+else
+  exec 1> "${logfile}"
+  exec 2> >(tee -a "${logfile}" >&2)
+fi
 
 ### environment setup ###
 . crosscompile.sh

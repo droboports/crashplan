@@ -16,3 +16,9 @@ set -o nounset  # exit on unset variable
 set -o xtrace   # enable script tracing
 
 /bin/sh "${prog_dir}/service.sh" stop
+
+if [ -f "${prog_dir}/app/conf/my.service.xml" ]; then
+  if grep -q "127\.0\.0\.1" "${prog_dir}/app/conf/my.service.xml" 2> /dev/null; then
+    sed -e "s/127.0.0.1/0.0.0.0/g" -i "${prog_dir}/app/conf/my.service.xml"
+  fi
+fi
