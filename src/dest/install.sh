@@ -17,6 +17,9 @@ set -o errexit  # exit on uncaught error code
 set -o nounset  # exit on unset variable
 set -o xtrace   # enable script tracing
 
+# install apache 2.x
+/usr/bin/DroboApps.sh install_version apache 2
+
 # copy default configuration files
 find "${prog_dir}" -type f -name "*.default" -print | while read deffile; do
   basefile="$(dirname "${deffile}")/$(basename "${deffile}" .default)"
