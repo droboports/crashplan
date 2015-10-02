@@ -75,18 +75,6 @@ ln -s "libffi.so.6.0.1" "${DEST}/lib/libffi.so.5"
 popd
 }
 
-### LIBJNA ###
-#_build_libjna() {
-#local VERSION="3.2.4-2"
-#local FOLDER="libjna-java_${VERSION}"
-#local FILE="${FOLDER}_armel.deb"
-#local URL="http://ftp.debian.org/debian/pool/main/libj/libjna-java/${FILE}"
-#
-#_download_deb "${FILE}" "${URL}" "${FOLDER}"
-#mkdir -p "${DEST}/lib"
-#cp -v "target/${FOLDER}/usr/lib/jni/libjnidispatch.so" "${DEST}/lib/"
-#}
-
 ### CRASHPLAN ###
 _build_crashplan() {
 local VERSION="4.4.1"
@@ -114,13 +102,18 @@ cat "${TARGET}/install.defaults" >> install.vars
 popd
 }
 
+### LIBJNA ###
+_build_libjna() {
+rm -vf "${DEST}/app/lib/jna-platform.jar"
+}
+
 ### BUILD ###
 _build() {
   _build_jre
   _build_jtux
   _build_fastmd5
   _build_libffi
-#  _build_libjna
   _build_crashplan
+  _build_libjna
   _package
 }
