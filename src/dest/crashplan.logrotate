@@ -1,0 +1,16 @@
+/tmp/DroboApps/crashplan/log.txt
+/tmp/DroboApps/crashplan/access.log
+/tmp/DroboApps/crashplan/error.log
+/tmp/DroboApps/crashplan/install.log
+/tmp/DroboApps/crashplan/update.log
+/tmp/DroboApps/crashplan/upgrade.*.log
+/tmp/DroboApps/crashplan/reset.log
+/tmp/DroboApps/crashplan/app.log
+{
+  missingok
+  notifempty
+  size 50k
+  rotate 1
+  su root root
+  copytruncate
+}

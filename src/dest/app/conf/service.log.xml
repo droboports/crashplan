@@ -1,0 +1,107 @@
+<Configuration name="Code42 Client Log Configuration"
+               status="WARN"
+               strict="false"
+               shutdownHook="disable">
+
+    <!-- All properties defined here are merely defaults. If the system properties are defined elsewhere, then these defaults will not be used. -->
+    <Properties>
+        <Property name="c42.log.path">/tmp/DroboApps/crashplan</Property>
+        <Property name="c42.log.shared.pattern.layout">[%date{MM.dd.yy HH:mm:ss.SSS} %-5level %-12.12thread %32.32logger] %message%ex{0}%n</Property>
+        <Property name="c42.log.simple.pattern.layout">%level{length=1} %date{MM/dd/yy hh:mma} %message%n</Property>
+
+        <Property name="c42.log.root.level">INFO</Property>
+        <Property name="c42.log.root.size.limit">1 MB</Property>
+        <Property name="c42.log.root.num.versions">1</Property>
+
+        <Property name="c42.log.history.level">INFO</Property>
+        <Property name="c42.log.history.size.limit">1 MB</Property>
+        <Property name="c42.log.history.num.versions">1</Property>
+
+        <Property name="c42.log.backup.level">INFO</Property>
+        <Property name="c42.log.backup.size.limit">1 MB</Property>
+        <Property name="c42.log.backup.num.versions">1</Property>
+
+        <Property name="c42.log.restore.level">INFO</Property>
+        <Property name="c42.log.restore.size.limit">1 MB</Property>
+        <Property name="c42.log.restore.num.versions">1</Property>
+        
+    </Properties>
+
+    <Appenders>
+        <!-- The console appender is unused by default. It may be referenced dynamically
+             after startup. -->
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="${sys:c42.log.shared.pattern.layout}"/>
+        </Console>
+
+        <RollingFile name="ServiceLog">
+            <filename>${sys:c42.log.path}/service.log.0</filename>
+            <filepattern>${sys:c42.log.path}/service.log.%i</filepattern>
+            <append>true</append>
+            <PatternLayout pattern="${sys:c42.log.shared.pattern.layout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${sys:c42.log.root.size.limit}"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" min="1" max="${sys:c42.log.root.num.versions}"/>
+        </RollingFile>
+
+        <RollingFile name="HistoryLog">
+            <filename>${sys:c42.log.path}/history.log.0</filename>
+            <filepattern>${sys:c42.log.path}/history.log.%i</filepattern>
+            <append>true</append>
+            <PatternLayout pattern="${sys:c42.log.simple.pattern.layout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${sys:c42.log.history.size.limit}"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" min="1" max="${sys:c42.log.history.num.versions}"/>
+        </RollingFile>
+
+        <RollingFile name="BackupLog">
+            <filename>${sys:c42.log.path}/backup_files.log.0</filename>
+            <filepattern>${sys:c42.log.path}/backup_files.log.%i</filepattern>
+            <append>true</append>
+            <PatternLayout pattern="${sys:c42.log.simple.pattern.layout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${sys:c42.log.backup.size.limit}"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" min="1" max="${sys:c42.log.backup.num.versions}"/>
+        </RollingFile>
+
+        <RollingFile name="RestoreLog">
+            <filename>${sys:c42.log.path}/restore_files.log.0</filename>
+            <filepattern>${sys:c42.log.path}/restore_files.log.%i</filepattern>
+            <append>true</append>
+            <PatternLayout pattern="${sys:c42.log.simple.pattern.layout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="${sys:c42.log.restore.size.limit}"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" min="1" max="${sys:c42.log.restore.num.versions}"/>
+        </RollingFile>
+        
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.backup42.service.ui.UIClientExitedCheck" level="OFF" />
+        <Logger name="com.code42.event" level="WARN" />
+        <Logger name="com.code42.nio" level="WARN" />
+        <!-- Third Party Logging -->
+        <Logger name="org.eclipse.jetty" level="ERROR" />
+    
+        <Root level="${sys:c42.log.root.level}">
+            <AppenderRef ref="ServiceLog"/>
+        </Root>
+
+        <Logger name="HistoryLogger" level="${sys:c42.log.history.level}" additivity="false">
+            <AppenderRef ref="HistoryLog"/>
+        </Logger>
+
+        <Logger name="BackupLogger" level="${sys:c42.log.backup.level}" additivity="false">
+            <AppenderRef ref="BackupLog"/>
+        </Logger>
+
+        <Logger name="RestoreLogger" level="${sys:c42.log.restore.level}" additivity="false">
+            <AppenderRef ref="RestoreLog"/>
+        </Logger>
+    </Loggers>
+
+</Configuration>

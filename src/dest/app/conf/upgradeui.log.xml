@@ -1,0 +1,36 @@
+<Configuration name="Upgrade UI Log Configuration"
+               status="WARN"
+               strict="false">
+
+    <!-- All properties defined here are merely defaults. If the system properties are defined elsewhere, then these defaults will not be used. -->
+    <Properties>
+        <Property name="c42.log.shared.pattern.layout">[%date{MM.dd.yy HH:mm:ss.SSS} %-5level %-12.12thread %32.32logger] %message%ex{0}%n</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- The console appender is unused by default. It may be referenced dynamically
+             after startup. -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${sys:c42.log.shared.pattern.layout}"/>
+        </Console>
+
+        <RollingFile name="Log">
+            <filename>upgradeui.log.0</filename>
+            <filepattern>upgradeui.log.%i</filepattern>
+            <append>true</append>
+            <PatternLayout pattern="${sys:c42.log.shared.pattern.layout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" min="1" max="1"/>
+        </RollingFile>
+        
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Log"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

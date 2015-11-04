@@ -82,22 +82,24 @@ local FOLDER="crashplan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"
 local TARGET="${PWD}/target/${FOLDER}"
+local DATE="$(date +%Y%m%d)"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 mkdir -p "${DEST}/app"
 pushd "${DEST}/app"
 cat "${TARGET}/CrashPlan_${VERSION}.cpi" | gzip -dc - | cpio -i --no-preserve-owner
 cp -vf "${TARGET}/scripts/run.conf" "bin/run.conf.default"
-sed -e "s/ps axw/ps w/" -i "${DEST}/app/bin/restartLinux.sh"
 sed -e "s/Xmx1024m/Xmx128m/g" -i "${DEST}/app/bin/run.conf.default"
-> install.vars
-echo "TARGETDIR=${DEST}/app" >> install.vars
-echo "BINSDIR=${DEST}/app/bin" >> install.vars
-echo "MANIFESTDIR=${DEST}/app/manifest" >> install.vars
-echo "INITDIR=" >> install.vars
-echo "RUNLVLDIR=" >> install.vars
-echo "INSTALLDATE=`date +%Y%m%d`" >> install.vars
-echo "JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java8/bin/java" >> install.vars
+sed -e "s|^ps axw|${DEST}/libexec/ps axw|" -i "${DEST}/app/bin/restartLinux.sh"
+cat > install.vars << EOF
+TARGETDIR=${DEST}/app
+BINSDIR=${DEST}/app/bin
+MANIFESTDIR=${DEST}/app/manifest
+INITDIR=${DEST}
+RUNLVLDIR=
+INSTALLDATE=${DATE}
+JAVACOMMON=/mnt/DroboFS/Shares/DroboApps/java8/bin/java
+EOF
 cat "${TARGET}/install.defaults" >> install.vars
 popd
 }
