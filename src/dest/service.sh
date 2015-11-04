@@ -7,51 +7,67 @@
 
 framework_version="2.1"
 name="crashplan"
-version="4.4.1"
+version="4.4.1-59"
 description="Online Data Backup - Offsite, Onsite, And Cloud."
 depends="java8 locale"
 webui="WebUI"
 
 prog_dir="$(dirname "$(realpath "${0}")")"
 java_tmp_dir="${prog_dir}/tmp"
-data_dir="/mnt/DroboFS/System/${name}"
+data_dir="/mnt/DroboFS/Shares/DroboApps/.AppData/${name}"
 tmp_dir="/tmp/DroboApps/${name}"
 pidfile="${tmp_dir}/pid.txt"
 logfile="${tmp_dir}/log.txt"
 statusfile="${tmp_dir}/status.txt"
 errorfile="${tmp_dir}/error.txt"
-uifile="/mnt/DroboFS/System/crashplan/.ui_info"
+uifile="${data_dir}/.ui_info"
 locale="${DROBOAPPS_DIR}/locale/bin/locale"
 localedef="${DROBOAPPS_DIR}/locale/bin/localedef"
 daemon="${DROBOAPPS_DIR}/java8/bin/java"
 classpath="${prog_dir}/app/lib/com.backup42.desktop.jar:${prog_dir}/app/lang"
 mainclass="com.backup42.service.CPService"
 
-# backwards compatibility
-if [ -z "${FRAMEWORK_VERSION:-}" ]; then
-  framework_version="2.0"
-  . "${prog_dir}/libexec/service.subr"
-fi
-
-start() {
+# check firmware version
+_firmware_check() {
+  local rc
+  local semver
   rm -f "${statusfile}" "${errorfile}"
-
-  if [ ! -f "${locale}" ]; then
-    echo "Locale is not installed, please install and start crashplan again." > "${statusfile}"
-    echo "1" > "${errorfile}"
+  if [ -z "${FRAMEWORK_VERSION:-}" ]; then
+    echo "Unsupported Drobo firmware, please upgrade to the latest version." > "${statusfile}"
+    echo "4" > "${errorfile}"
     return 1
   fi
-
-  if [ ! -f "${daemon}" ]; then
-    echo "Java8 is not installed, please install and start crashplan again." > "${statusfile}"
-    echo "1" > "${errorfile}"
-    return 2
+  semver="$(/usr/bin/semver.sh "${framework_version}" "${FRAMEWORK_VERSION}")"
+  if [ "${semver}" == "1" ]; then
+    echo "Unsupported Drobo firmware, please upgrade to the latest version." > "${statusfile}"
+    echo "4" > "${errorfile}"
+    return 1
   fi
+  return 0
+}
+
+# perform crashplan upgrades
+_perform_upgrades() {
+  find "${prog_dir}/app/upgrade" -mindepth 1 -maxdepth 1 -type d ! -name UpgradeUI -print | sort | while read updir; do
+    if [ -f "${updir}/upgrade.sh" ]; then
+      sed -e 's|RM=.*|RM="rm -f"|g' \
+          -e 's|MV=.*|MV="mv -f"|g' \
+          -e "s|INIT_SCRIPT=.*|INIT_SCRIPT=\"${prog_dir}/service.sh\"|g" \
+          -e "s|/bin/ps|${prog_dir}/libexec/ps|g" \
+          -i "${updir}/upgrade.sh"
+      cd "${updir}"
+      if ./upgrade.sh; then
+        mv -f "${updir}/upgrade.sh" "${updir}/upgrade.sh.done"
+      fi
+    fi
+  done
+}
+
+start() {
+  _firmware_check
 
   if [ ! -f "${prog_dir}/app/lib/com.backup42.desktop.jar" ]; then
-    echo "Crashplan update failed, please reinstall crashplan." > "${statusfile}"
-    echo "1" > "${errorfile}"
-    return 3
+    _perform_upgrades
   fi
 
   echo 1048576 > /proc/sys/fs/inotify/max_user_watches
