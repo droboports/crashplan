@@ -1,0 +1,40 @@
+language: c
+compiler: gcc
+os: linux
+sudo: required
+
+addons:
+  apt:
+    packages:
+      - libc6:i386
+      - libstdc++6:i386
+      - libncurses5:i386
+      - qemu-user-static
+      - binfmt-support
+      - php5-cli
+
+cache:
+  directories:
+    - $HOME/xtools/toolchain/5n
+
+install:
+  - update-binfmts --display
+  - sudo mkdir -p -m 777 /mnt/DroboFS/Shares/DroboApps
+  - mkdir -p $HOME/xtools/toolchain/5n
+  - if [ ! -f $HOME/xtools/toolchain/5n/arm7-tools.tgz ]; then
+    wget -O $HOME/xtools/toolchain/5n/arm7-tools.tgz https://copy.com/nBZXoz3NdvFX%2FDroboAppsDS%2Farm7-tools.gz?download=1 ;
+    fi
+  - if [ ! -d $HOME/xtools/toolchain/5n/bin ]; then
+    tar -zxf $HOME/xtools/toolchain/5n/arm7-tools.tgz -C $HOME/xtools/toolchain/5n ;
+    fi
+  - $HOME/xtools/toolchain/5n/bin/arm-marvell-linux-gnueabi-gcc --version
+
+script: ./build.sh
+
+after_failure: cat logfile_* | nc termbin.com 9999
+
+after_success: curl -i -X POST -F "file=@$(ls *.tgz)" -F "expire=86400" -F "submit=Upload%20it!" http://tempsend.com/send
+
+branches:
+  only:
+    - master
