@@ -7,7 +7,7 @@
 
 framework_version="2.0"
 name="crashplan"
-version="4.4.1-59"
+version="4.4.1-59-1"
 description="Online Data Backup - Offsite, Onsite, And Cloud."
 depends="java8 locale"
 webui="WebUI"
@@ -37,9 +37,10 @@ _perform_upgrades() {
           -e 's|MV=.*|MV="mv -f"|g' \
           -e "s|INIT_SCRIPT=.*|INIT_SCRIPT=\"${prog_dir}/service.sh\"|g" \
           -e "s|/bin/ps|${prog_dir}/libexec/ps|g" \
+          -e "s|^function ||g" \
           -i "${updir}/upgrade.sh"
       cd "${updir}"
-      if ./upgrade.sh; then
+      if /bin/sh ./upgrade.sh; then
         mv -f "${updir}/upgrade.sh" "${updir}/upgrade.sh.done"
       fi
     fi
