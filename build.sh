@@ -37,6 +37,14 @@ export CPPFLAGS="-I${DEPS}/include"
 export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,${DEST}/lib -L${DEST}/lib"
 alias make="make -j4 V=1 VERBOSE=1"
 
+_wget() {
+  if [ -z "${CONTINUOUS_INTEGRATION:-}" ]; then
+    wget "$@"
+  else
+    wget --no-check-certificate "$@"
+  fi
+}
+
 ### support functions ###
 # Download a TAR file and unpack it, removing old files.
 # $1: file
@@ -45,7 +53,7 @@ alias make="make -j4 V=1 VERBOSE=1"
 _download_tar() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && tar -xvf "download/${1}" -C target
   return 0
@@ -58,7 +66,7 @@ _download_tar() {
 _download_tgz() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && tar -zxvf "download/${1}" -C target
   return 0
@@ -71,7 +79,7 @@ _download_tgz() {
 _download_bz2() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && tar -jxvf "download/${1}" -C target
   return 0
@@ -84,7 +92,7 @@ _download_bz2() {
 _download_xz() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && tar -Jxvf "download/${1}" -C target
   return 0
@@ -97,7 +105,7 @@ _download_xz() {
 _download_zip() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   [[ ! -d "target/${3}" ]]   && unzip -d "target" "download/${1}"
   return 0
@@ -110,7 +118,7 @@ _download_zip() {
 _download_app() {
   [[ ! -d "download" ]]      && mkdir -p "download"
   [[ ! -d "target" ]]        && mkdir -p "target"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   [[   -d "target/${3}" ]]   && rm -vfr "target/${3}"
   mkdir -p "target/${3}"
   tar -zxvf "download/${1}" -C "target/${3}"
@@ -133,7 +141,7 @@ _download_git() {
 # $2: url
 _download_file() {
   [[ ! -d "download" ]]      && mkdir -p "download"
-  [[ ! -f "download/${1}" ]] && wget -O "download/${1}" "${2}"
+  [[ ! -f "download/${1}" ]] && _wget -O "download/${1}" "${2}"
   return 0
 }
 
@@ -143,7 +151,7 @@ _download_file() {
 # $3: folder
 _download_file_in_folder() {
   [[ ! -d "download/${3}" ]]      && mkdir -p "download/${3}"
-  [[ ! -f "download/${3}/${1}" ]] && wget -O "download/${3}/${1}" "${2}"
+  [[ ! -f "download/${3}/${1}" ]] && _wget -O "download/${3}/${1}" "${2}"
   return 0
 }
 
