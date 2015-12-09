@@ -12,6 +12,7 @@ addons:
       - qemu-user-static
       - binfmt-support
       - php5-cli
+      - ca-certificates
 
 cache:
   directories:
