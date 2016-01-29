@@ -1,7 +1,7 @@
 <?php 
 $app = "crashplan";
 $appname = "Crashplan";
-$appversion = "4.5.0";
+$appversion = "4.5.2";
 $appsite = "https://www.code42.com/crashplan/";
 $apphelp = "https://support.code42.com/CrashPlan";
 $apppage = "https://www.crashplan.com/account/login.vtl";
