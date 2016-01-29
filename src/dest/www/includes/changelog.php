@@ -1,3 +1,7 @@
+<p>Changes from 4.4.1-59-1:</p>
+<ol>
+  <li>Improved update recovery.</li>
+</ol>
 <p>Changes from 4.4.1-59:</p>
 <ol>
   <li>Improved update recovery.</li>
