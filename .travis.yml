@@ -12,6 +12,7 @@ addons:
       - qemu-user-static
       - binfmt-support
       - php5-cli
+      - unzip
 
 cache:
   directories:
@@ -21,11 +22,14 @@ install:
   - update-binfmts --display
   - sudo mkdir -p -m 777 /mnt/DroboFS/Shares/DroboApps
   - mkdir -p $HOME/xtools/toolchain/5n
-  - if [ ! -f $HOME/xtools/toolchain/5n/arm7-tools.tgz ]; then
-    wget -O $HOME/xtools/toolchain/5n/arm7-tools.tgz https://copy.com/nBZXoz3NdvFX%2FDroboAppsDS%2Farm7-tools.gz?download=1 ;
+  - if [ ! -f $HOME/xtools/toolchain/5n/SDK-2.1.zip ]; then
+    wget -O $HOME/xtools/toolchain/5n/SDK-2.1.zip ftp://updates.drobo.com/droboapps/development/SDK-2.1.zip ;
+    fi
+  - if [ ! -f $HOME/xtools/toolchain/5n/arm7-tools.gz ]; then
+    unzip -j $HOME/xtools/toolchain/5n/SDK-2.1.zip -d $HOME/xtools/toolchain/5n "DroboApps SDK 2.1/arm7-tools.gz" ;
     fi
   - if [ ! -d $HOME/xtools/toolchain/5n/bin ]; then
-    tar -zxf $HOME/xtools/toolchain/5n/arm7-tools.tgz -C $HOME/xtools/toolchain/5n ;
+    tar -zxf $HOME/xtools/toolchain/5n/arm7-tools.gz -C $HOME/xtools/toolchain/5n ;
     fi
   - $HOME/xtools/toolchain/5n/bin/arm-marvell-linux-gnueabi-gcc --version
 
