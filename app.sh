@@ -10,7 +10,7 @@ _download_deb() {
   return 0
 }
 
-JAVA_VERSION="8u91-b14-3"
+JAVA_VERSION="8u102-b14.1-2"
 JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk-headless_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
 JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 
