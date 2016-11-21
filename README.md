@@ -2,6 +2,17 @@
 
 This is a set of scripts to package a DroboApp from scratch, i.e., download sources, unpackage, compile, install, and package in a TGZ file. The `master` branch contains the Drobo5N version, the `drobofs` branch contains the DroboFS version.
 
+## No ARM Support
+
+There won't be a new version of Crashplan for the Drobo anytime soon. With Crashplan 4.8, Code42 began using libraries incompatible with ARM devices like the Drobo and they have no plans of ever supporting ARM devices again. This means no more Crashplan for the Drobo, Raspberry Pi, Synology, QNAP, ReadyNAS, and so on.
+
+The Crashplan app for Drobo blocks of the self-update mechanism. It is a feature that was introduced with 4.7.0.14. Some users have maintained functional backups to Crashplan Central using 4.7.0.14.
+
+For more details, please see:
+
+http://www.drobospace.com/forums/showthread.php?tid=141634&pid=202265#pid202265
+https://crashplan.setepontos.com/forums/topic/non-intel-cpus-apparently-are-no-longer-supported/
+
 ## I just want to install the DroboApp, what do I do?
 
 Check the [releases](https://github.com/droboports/crashplan/releases) page. If there are no releases available, then you have to compile.
