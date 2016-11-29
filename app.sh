@@ -10,7 +10,7 @@ _download_deb() {
   return 0
 }
 
-JAVA_VERSION="8u72-b05-6"
+JAVA_VERSION="8u72-b15-1~bpo8+1"
 JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
 JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 
@@ -89,7 +89,7 @@ popd
 
 ### CRASHPLAN ###
 _build_crashplan() {
-local VERSION="4.5.2"
+local VERSION="4.6.0"
 local FOLDER="crashplan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"
