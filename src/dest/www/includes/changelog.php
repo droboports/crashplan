@@ -1,3 +1,7 @@
+<p>Changes from 4.7.0:</p>
+<ol>
+  <li>Crashplan updated to version 4.7.0 (<a href="https://support.code42.com/Release_Notes" target="_new">full changelog</a>).</li>
+</ol>
 <p>Changes from 4.5.0:</p>
 <ol>
   <li>Crashplan updated to version 4.5.2 (<a href="https://support.code42.com/Release_Notes" target="_new">full changelog</a>).</li>

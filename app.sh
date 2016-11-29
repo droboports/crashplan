@@ -10,14 +10,14 @@ _download_deb() {
   return 0
 }
 
-JAVA_VERSION="8u72-b05-6"
-JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
+JAVA_VERSION="8u102-b14.1-2"
+JAVA_INCLUDE="${PWD}/target/openjdk-8-jdk-headless_${JAVA_VERSION}/usr/lib/jvm/java-8-openjdk-armel/include"
 JAVA_INCLUDE_LINUX="${JAVA_INCLUDE}/linux"
 
 ### JRE INCLUDES ###
 _build_jre() {
 local VERSION="${JAVA_VERSION}"
-local FOLDER="openjdk-8-jdk_${VERSION}"
+local FOLDER="openjdk-8-jdk-headless_${VERSION}"
 local FILE="${FOLDER}_armel.deb"
 local URL="http://ftp.debian.org/debian/pool/main/o/openjdk-8/${FILE}"
 
@@ -89,7 +89,7 @@ popd
 
 ### CRASHPLAN ###
 _build_crashplan() {
-local VERSION="4.5.2"
+local VERSION="4.7.0"
 local FOLDER="crashplan-install"
 local FILE="CrashPlan_${VERSION}_Linux.tgz"
 local URL="http://download.code42.com/installs/linux/install/CrashPlan/${FILE}"
